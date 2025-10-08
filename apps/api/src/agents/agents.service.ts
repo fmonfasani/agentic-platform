@@ -15,7 +15,7 @@ const AGENT_SUMMARY_SELECT = {
   openaiAgentId: true,
   model: true,
   instructions: true
-} satisfies Prisma.AgentSelect
+} as const
 
 type AgentSummaryRow = Prisma.AgentGetPayload<{ select: typeof AGENT_SUMMARY_SELECT }>
 
@@ -60,7 +60,7 @@ export class AgentsService {
 
   async updateAgentAgentKitMetadata(
     id: string,
-    metadata: Pick<Prisma.AgentUpdateInput, 'openaiAgentId' | 'instructions' | 'model'>
+    metadata: Partial<Pick<AgentSummary, 'openaiAgentId' | 'instructions' | 'model'>>
   ) {
     const agent = await this.prisma.agent.update({
       where: { id },
@@ -72,4 +72,3 @@ export class AgentsService {
   }
 }
 
-export type AgentSummary = AgentSummaryRow & { type: AgentType }
