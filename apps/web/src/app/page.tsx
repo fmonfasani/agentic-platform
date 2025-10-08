@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AgentCard } from '@agents-hub/ui'
-import { agentGroups, orderedAgentTypes } from '../lib/agents-data'
+import { agentGroups, orderedAgentTypes, AgentType } from '../lib/agents-data'
 import { SectionTitle } from '../lib/ui'
 import AgentModal from '../components/AgentModal'
 import AgentChatKitEmbed from '../components/AgentChatKitEmbed'
 
-type AgentMetrics = {
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+
+type AgentSummary = {
   id: string
   name: string
-  type: keyof typeof agentGroups
-  area?: string | null
+  area: string
+  description?: string | null
   uses: number
   downloads: number
   rewards: number
@@ -22,8 +24,11 @@ type AgentMetrics = {
   instructions?: string | null
 }
 
+type AgentMetrics = AgentSummary & { type: AgentType }
+
 type GroupedAgents = Record<string, AgentMetrics[]>
 
+<<<<<<< HEAD
 type AgentTrace = {
   id: string
   runId: string
@@ -39,6 +44,27 @@ type AgentDetails = AgentMetrics & {
   description?: string | null
   updatedAt: string
   traces?: AgentTrace[]
+=======
+type AgentDetail = {
+  id: string
+  name: string
+  area: string
+  description: string | null
+  metrics: {
+    uses: number
+    downloads: number
+    rewards: number
+    stars: number
+    votes: number
+  }
+  workflows: {
+    id: string
+    name: string
+    status: string
+    model: string
+    platform: string
+  }[]
+>>>>>>> main
 }
 
 export default function Page() {
@@ -55,12 +81,16 @@ export default function Page() {
     async function loadAgents() {
       setLoading(true)
       try {
-        const res = await fetch('/api/agents', { cache: 'no-store' })
+        const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
         if (!res.ok) {
           throw new Error('No se pudieron obtener los agentes del ENACOM')
         }
-        const data = (await res.json()) as AgentMetrics[]
-        setAgents(data)
+        const data = (await res.json()) as AgentSummary[]
+        const enriched = data.map((agent) => ({
+          ...agent,
+          type: inferAgentType(agent.name)
+        }))
+        setAgents(enriched)
         setError(null)
       } catch (err) {
         console.error(err)
@@ -152,9 +182,7 @@ export default function Page() {
       </p>
 
       {error && (
-        <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error}
-        </div>
+        <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>
       )}
 
       {loading ? (
