@@ -27,8 +27,6 @@ type AgentSummary = {
 type AgentMetrics = AgentSummary & { type: AgentType }
 
 type GroupedAgents = Record<string, AgentMetrics[]>
-
-<<<<<<< HEAD
 type AgentTrace = {
   id: string
   runId: string
@@ -44,27 +42,6 @@ type AgentDetails = AgentMetrics & {
   description?: string | null
   updatedAt: string
   traces?: AgentTrace[]
-=======
-type AgentDetail = {
-  id: string
-  name: string
-  area: string
-  description: string | null
-  metrics: {
-    uses: number
-    downloads: number
-    rewards: number
-    stars: number
-    votes: number
-  }
-  workflows: {
-    id: string
-    name: string
-    status: string
-    model: string
-    platform: string
-  }[]
->>>>>>> main
 }
 
 export default function Page() {
@@ -382,4 +359,43 @@ function TraceCard({ trace }: { trace: AgentTrace }) {
       )}
     </div>
   )
+}
+
+const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentType }[] = [
+  {
+    type: 'technical',
+    keywords: ['técnico', 'tecnico', 'infraestructura', 'radiocomunicaciones', 'tecnología', 'tecnologias']
+  },
+  {
+    type: 'financial',
+    keywords: ['financiero', 'financiera', 'contable', 'presupuesto', 'presupuestaria', 'tesorería', 'tesoreria']
+  },
+  {
+    type: 'regulatory',
+    keywords: ['licencia', 'licencias', 'permiso', 'permisos', 'regulatorio', 'regulatoria', 'normativa', 'expediente']
+  },
+  {
+    type: 'reporting',
+    keywords: ['informe', 'informes', 'reporte', 'reportes', 'tablero', 'dashboard', 'resumen', 'ejecutivo']
+  },
+  {
+    type: 'risk',
+    keywords: ['riesgo', 'riesgos', 'auditoría', 'auditoria', 'alerta']
+  },
+  {
+    type: 'planning',
+    keywords: ['planificación', 'planificacion', 'planificador', 'proyecto', 'proyectos', 'estratégico', 'estrategico', 'planeamiento']
+  }
+]
+
+function inferAgentType(name: string): AgentType {
+  const normalized = name.toLowerCase()
+
+  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) {
+      return type
+    }
+  }
+
+  return 'general'
 }
