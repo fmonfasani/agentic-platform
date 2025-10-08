@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
 
@@ -17,9 +16,23 @@ const AGENT_SUMMARY_SELECT = {
   instructions: true
 } as const
 
-type AgentSummaryRow = Prisma.AgentGetPayload<{ select: typeof AGENT_SUMMARY_SELECT }>
+type AgentSummaryRow = {
+  id: string
+  name: string
+  area: string
+  uses: number
+  downloads: number
+  rewards: number
+  stars: number
+  votes: number
+  openaiAgentId: string | null
+  model: string | null
+  instructions: string | null
+}
 
-const addAgentType = <T extends { name: string }>(agent: T): T & { type: AgentType } => ({
+type AgentSummary = AgentSummaryRow & { type: AgentType }
+
+const addAgentType = (agent: AgentSummaryRow): AgentSummary => ({
   ...agent,
   type: inferAgentType(agent.name)
 })
