@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api'
+
 type AgentMetrics = {
   id: string
   name: string
   area?: string | null
+  description?: string | null
   uses: number
   downloads: number
   rewards: number
@@ -42,11 +45,11 @@ export default function AgentCard({ agent, onOpen }: AgentCardProps) {
     setBusyAction(type)
     setError(null)
     try {
-      const res = await fetch(`/api/agents/${agent.id}/${type}`, { method: 'POST' })
+      const res = await fetch(`${API_BASE_URL}/agents/${agent.id}/${type}`, { method: 'POST' })
       if (!res.ok) {
         throw new Error('No se pudo actualizar la métrica')
       }
-      const data = await res.json()
+      const data = (await res.json()) as AgentMetrics
       setMetrics(data)
     } catch (err) {
       console.error(err)
@@ -60,7 +63,7 @@ export default function AgentCard({ agent, onOpen }: AgentCardProps) {
     setBusyAction('rate')
     setError(null)
     try {
-      const res = await fetch(`/api/agents/${agent.id}/rate`, {
+      const res = await fetch(`${API_BASE_URL}/agents/${agent.id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stars: pendingStars })
@@ -68,7 +71,7 @@ export default function AgentCard({ agent, onOpen }: AgentCardProps) {
       if (!res.ok) {
         throw new Error('No se pudo registrar la valoración')
       }
-      const data = await res.json()
+      const data = (await res.json()) as AgentMetrics
       setMetrics(data)
       setPendingStars(5)
     } catch (err) {

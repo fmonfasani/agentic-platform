@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 
-const DEFAULT_API_URL = 'http://localhost:3001'
+const DEFAULT_API_URL = 'http://localhost:3001/api'
 
-const API_BASE_URL =
-  process.env.ENACOM_API_URL ?? process.env.NEXT_PUBLIC_ENACOM_API_URL ?? DEFAULT_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? DEFAULT_API_URL
 
 type ForwardInit = RequestInit & { json?: unknown }
 

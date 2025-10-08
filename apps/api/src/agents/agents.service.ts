@@ -1,7 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { Agent, Metrics, Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
-type MetricsField = 'uses' | 'downloads' | 'rewards'
+type AgentSummary = {
+  id: string
+  name: string
+  area: string
+  description?: string | null
+  stars: number
+  votes: number
+  uses: number
+  downloads: number
+  rewards: number
+}
 
 @Injectable()
 export class AgentsService {
@@ -25,22 +36,77 @@ export class AgentsService {
   async findById(id: string) {
     const agent = await this.prisma.agent.findUnique({
       where: { id },
-      include: {
-        metrics: true,
-        workflows: {
-          orderBy: {
-            name: 'asc'
-          }
-        }
-      }
+      include: { metrics: true, workflows: true }
     })
 
     if (!agent) {
-      throw new NotFoundException(`Agent with id "${id}" not found`)
+      throw new NotFoundException('Agent not found')
     }
 
-    const metrics = agent.metrics ?? { id: null, uses: 0, downloads: 0, rewards: 0, agentId: agent.id }
+    const { workflows, metrics, ...rest } = agent
 
+    return {
+      ...rest,
+      metrics: this.toMetrics(metrics, agent),
+      workflows: workflows.map((workflow) => ({
+        id: workflow.id,
+        name: workflow.name,
+        status: workflow.status,
+        model: workflow.model,
+        platform: workflow.platform
+      }))
+    }
+  }
+
+  async incrementMetric(id: string, field: keyof Metrics) {
+    try {
+      const updatedMetrics = await this.prisma.metrics.update({
+        where: { agentId: id },
+        data: { [field]: { increment: 1 } },
+        include: { agent: true }
+      })
+
+      return this.toSummary({ ...updatedMetrics.agent, metrics: updatedMetrics })
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Agent not found')
+      }
+      throw error
+    }
+  }
+
+  async rateAgent(id: string, stars: number) {
+    const parsedStars = typeof stars === 'number' ? stars : Number(stars)
+    const safeStars = Math.max(0, Math.min(5, Number.isFinite(parsedStars) ? parsedStars : 0))
+
+    const updatedAgent = await this.prisma.$transaction(async (tx) => {
+      const agent = await tx.agent.findUnique({
+        where: { id },
+        include: { metrics: true }
+      })
+
+      if (!agent) {
+        throw new NotFoundException('Agent not found')
+      }
+
+      const newVotes = agent.votes + 1
+      const calculatedAverage = agent.votes === 0 ? safeStars : (agent.stars * agent.votes + safeStars) / newVotes
+      const starsAverage = Number(calculatedAverage.toFixed(2))
+
+      return tx.agent.update({
+        where: { id },
+        data: {
+          votes: newVotes,
+          stars: starsAverage
+        },
+        include: { metrics: true }
+      })
+    })
+
+    return this.toSummary(updatedAgent)
+  }
+
+  private toSummary(agent: Agent & { metrics?: Metrics | null }): AgentSummary {
     return {
       id: agent.id,
       name: agent.name,
@@ -48,68 +114,23 @@ export class AgentsService {
       description: agent.description,
       stars: agent.stars,
       votes: agent.votes,
-      metrics: {
-        uses: metrics.uses,
-        downloads: metrics.downloads,
-        rewards: metrics.rewards,
-        stars: agent.stars,
-        votes: agent.votes
-      },
-      workflows: agent.workflows
+      ...this.toMetrics(agent.metrics, agent)
     }
   }
 
-  async incrementMetric(id: string, field: MetricsField) {
-    await this.ensureAgentExists(id)
-
-    await this.prisma.metrics.upsert({
-      where: { agentId: id },
-      update: { [field]: { increment: 1 } },
-      create: {
-        agentId: id,
-        uses: field === 'uses' ? 1 : 0,
-        downloads: field === 'downloads' ? 1 : 0,
-        rewards: field === 'rewards' ? 1 : 0
-      }
-    })
-
-    return this.findById(id)
-  }
-
-  async rateAgent(id: string, stars: number) {
-    if (typeof stars !== 'number' || Number.isNaN(stars)) {
-      throw new BadRequestException('Rating value must be a number')
-    }
-
-    if (stars < 0 || stars > 5) {
-      throw new BadRequestException('Rating value must be between 0 and 5')
-    }
-
-    const agent = await this.prisma.agent.findUnique({ where: { id } })
-
-    if (!agent) {
-      throw new NotFoundException(`Agent with id "${id}" not found`)
-    }
-
-    const newVotes = agent.votes + 1
-    const newStars = Number(((agent.stars * agent.votes + stars) / newVotes).toFixed(2))
-
-    await this.prisma.agent.update({
-      where: { id },
-      data: {
-        votes: { increment: 1 },
-        stars: newStars
-      }
-    })
-
-    return this.findById(id)
-  }
-
-  private async ensureAgentExists(id: string) {
-    const agent = await this.prisma.agent.findUnique({ where: { id } })
-
-    if (!agent) {
-      throw new NotFoundException(`Agent with id "${id}" not found`)
+  private toMetrics(metrics: Metrics | null | undefined, agent: { stars: number; votes: number }): {
+    uses: number
+    downloads: number
+    rewards: number
+    stars: number
+    votes: number
+  } {
+    return {
+      uses: metrics?.uses ?? 0,
+      downloads: metrics?.downloads ?? 0,
+      rewards: metrics?.rewards ?? 0,
+      stars: agent.stars,
+      votes: agent.votes
     }
   }
 }

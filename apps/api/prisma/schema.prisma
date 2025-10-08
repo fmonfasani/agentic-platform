@@ -1,5 +1,3 @@
-// Prisma schema for ENACOM agent metrics
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -21,20 +19,20 @@ model Agent {
 }
 
 model Metrics {
-  id        String @id @default(uuid())
-  uses      Int    @default(0)
-  downloads Int    @default(0)
-  rewards   Int    @default(0)
-  agentId   String @unique
-  agent     Agent  @relation(fields: [agentId], references: [id])
+  id         String  @id @default(uuid())
+  uses       Int     @default(0)
+  downloads  Int     @default(0)
+  rewards    Int     @default(0)
+  agentId    String  @unique
+  agent      Agent   @relation(fields: [agentId], references: [id])
 }
 
 model Workflow {
-  id       String @id @default(uuid())
-  name     String
-  status   String @default("ready")
-  model    String @default("gpt-4o")
-  platform String @default("OpenAI")
-  agentId  String
-  agent    Agent  @relation(fields: [agentId], references: [id])
+  id        String @id @default(uuid())
+  name      String
+  status    String @default("ready")
+  model     String @default("gpt-4o")
+  platform  String @default("OpenAI")
+  agentId   String
+  agent     Agent  @relation(fields: [agentId], references: [id])
 }
