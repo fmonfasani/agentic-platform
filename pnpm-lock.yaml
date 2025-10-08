@@ -74,7 +74,7 @@ importers:
         specifier: ^24.7.0
         version: 24.7.0
       prisma:
-        specifier: ^5.22.0
+        specifier: ^5.19.1
         version: 5.22.0
       ts-node:
         specifier: ^10.9.2
