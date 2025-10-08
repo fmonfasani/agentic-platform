@@ -1,16 +1,56 @@
-export type AgentType = 'Analyst' | 'Report'
+export type AgentType =
+  | 'technical'
+  | 'financial'
+  | 'regulatory'
+  | 'reporting'
+  | 'risk'
+  | 'planning'
+  | 'general'
 
 export const agentGroups: Record<AgentType, { title: string; description: string }> = {
-  Analyst: {
-    title: 'Analistas Especializados',
+  technical: {
+    title: 'Operaciones Técnicas',
     description:
-      'Expertos del ENACOM en infraestructura, licencias, economía y planeamiento estratégico que impulsan la toma de decisiones.'
+      'Agentes enfocados en infraestructura, radiocomunicaciones y soporte tecnológico crítico para garantizar la conectividad.'
   },
-  Report: {
+  financial: {
+    title: 'Análisis Financiero y Contable',
+    description:
+      'Especialistas en presupuestos, ejecución financiera y auditorías que respaldan la sostenibilidad institucional.'
+  },
+  regulatory: {
+    title: 'Gestión Regulatoria y Licencias',
+    description:
+      'Referentes que acompañan los procesos de licencias, autorizaciones y cumplimiento normativo del sector TIC.'
+  },
+  reporting: {
     title: 'Reportes e Informes Institucionales',
     description:
-      'Documentos y tableros ejecutivos que consolidan hallazgos regulatorios, técnicos y financieros para la gestión pública.'
+      'Documentos ejecutivos y tableros que consolidan hallazgos regulatorios, técnicos y financieros para la gestión pública.'
+  },
+  risk: {
+    title: 'Gestión de Riesgos y Control',
+    description:
+      'Herramientas que monitorean riesgos operativos, alertas tempranas y mecanismos de control interno del ENACOM.'
+  },
+  planning: {
+    title: 'Planificación y Proyectos Estratégicos',
+    description:
+      'Agentes que coordinan la planificación, seguimiento de proyectos y evaluación de impacto de las iniciativas institucionales.'
+  },
+  general: {
+    title: 'Agentes Institucionales Generales',
+    description:
+      'Asistentes transversales que brindan soporte integral para diversas áreas y necesidades del organismo.'
   }
 }
 
-export const orderedAgentTypes: AgentType[] = ['Analyst', 'Report']
+export const orderedAgentTypes: AgentType[] = [
+  'technical',
+  'financial',
+  'regulatory',
+  'reporting',
+  'risk',
+  'planning',
+  'general'
+]
