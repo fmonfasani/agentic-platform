@@ -1,3 +1,7 @@
+// ===================================================
+// Prisma Schema — platform_agents (by fmonfasani)
+// ===================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,15 +11,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===================================================
+// MODELS
+// ===================================================
+
 model Agent {
   id          String     @id @default(uuid())
   name        String
   area        String
   description String?
+
+  // Métricas básicas visibles en el panel
   stars       Float      @default(0)
   votes       Int        @default(0)
+
+  // Relaciones
   metrics     Metrics?
   workflows   Workflow[]
+
+  // Fecha de actualización (con default para evitar errores en migraciones)
+  updatedAt   DateTime   @default(now()) @updatedAt
 }
 
 model Metrics {
@@ -23,16 +38,24 @@ model Metrics {
   uses       Int     @default(0)
   downloads  Int     @default(0)
   rewards    Int     @default(0)
+
+  // Relación 1:1 con Agent
   agentId    String  @unique
-  agent      Agent   @relation(fields: [agentId], references: [id])
+  agent      Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model Workflow {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  status    String @default("ready")
-  model     String @default("gpt-4o")
-  platform  String @default("OpenAI")
+  status    String   @default("ready")
+  model     String   @default("gpt-4o")
+  platform  String   @default("OpenAI")
+  action    String?
+  value     Float?
+
+  // Relación N:1 con Agent
   agentId   String
-  agent     Agent  @relation(fields: [agentId], references: [id])
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }

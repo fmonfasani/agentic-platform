@@ -31,7 +31,21 @@ export class AgentsService {
         name: 'asc'
       }
     })
+    }
+    async runWorkflow(agentId: string, action?: string, input?: string) {
+    const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
+    if (!agent) throw new NotFoundException('Agent not found');
+
+    // simulás una respuesta
+    return {
+      agentId,
+      action,
+      input,
+      status: 'executed',
+      timestamp: new Date(),
+    };
   }
+
 
   async findById(id: string) {
     const agent = await this.prisma.agent.findUnique({
