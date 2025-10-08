@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { inferAgentType, AgentType } from '../agent-type'
 import { PrismaService } from '../../prisma/prisma.service'
 
 type MetricField = 'uses' | 'downloads' | 'rewards'
@@ -12,7 +13,6 @@ const ACTION_MAP: Record<MetricField, 'use' | 'download' | 'reward'> = {
 const METRIC_SELECT = {
   id: true,
   name: true,
-  type: true,
   area: true,
   uses: true,
   downloads: true,
@@ -21,6 +21,11 @@ const METRIC_SELECT = {
   votes: true
 }
 
+const addAgentType = <T extends { name: string }>(agent: T): T & { type: AgentType } => ({
+  ...agent,
+  type: inferAgentType(agent.name)
+})
+
 @Injectable()
 export class MetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -28,7 +33,7 @@ export class MetricsService {
   async increment(id: string, field: MetricField) {
     const action = ACTION_MAP[field]
 
-    return this.prisma.agent.update({
+    const agent = await this.prisma.agent.update({
       where: { id },
       data: {
         [field]: { increment: 1 },
@@ -40,6 +45,8 @@ export class MetricsService {
       },
       select: METRIC_SELECT
     })
+
+    return addAgentType(agent)
   }
 
   async rate(id: string, stars: number) {
@@ -52,7 +59,7 @@ export class MetricsService {
     const calculatedAverage = agent.votes === 0 ? safeStars : (agent.stars * agent.votes + safeStars) / (agent.votes + 1)
     const newAverage = Number(calculatedAverage.toFixed(2))
 
-    return this.prisma.agent.update({
+    const updated = await this.prisma.agent.update({
       where: { id },
       data: {
         stars: newAverage,
@@ -66,13 +73,17 @@ export class MetricsService {
       },
       select: METRIC_SELECT
     })
+
+    return addAgentType(updated)
   }
 
   async getMetrics(id: string) {
-    return this.prisma.agent.findUnique({
+    const agent = await this.prisma.agent.findUnique({
       where: { id },
       select: METRIC_SELECT
     })
+
+    return agent ? addAgentType(agent) : null
   }
 
 }
