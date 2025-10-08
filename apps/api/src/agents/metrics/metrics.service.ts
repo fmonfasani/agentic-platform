@@ -20,7 +20,7 @@ const METRIC_SELECT = {
   rewards: true,
   stars: true,
   votes: true
-} satisfies Prisma.AgentSelect
+}
 
 @Injectable()
 export class MetricsService {
