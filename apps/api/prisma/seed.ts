@@ -1,13 +1,29 @@
 import { PrismaClient } from '@prisma/client'
 
+type AgentSeed = {
+  id: string
+  name: string
+  area: string
+  description: string
+  type?: 'Analyst' | 'Report'
+  workflows: {
+    id: string
+    name: string
+    status?: string
+    model?: string
+    platform?: string
+  }[]
+}
+
 const prisma = new PrismaClient()
 
-const agentsData = [
+const agentsData: AgentSeed[] = [
   {
     id: '9b8d4331-1fc3-4cbe-a595-d02fa7c75f4b',
     name: 'Analista Técnico',
     area: 'Infraestructura y Radiocomunicaciones',
-    description: 'Supervisa la infraestructura técnica y coordina tareas de radiocomunicaciones para garantizar la cobertura nacional.',
+    description:
+      'Supervisa la infraestructura técnica y coordina tareas de radiocomunicaciones para garantizar la cobertura nacional.',
     workflows: [
       {
         id: 'wf-analista-tecnico-1',
@@ -29,7 +45,8 @@ const agentsData = [
     id: '1a9efb77-02cc-49db-bc0e-7cf9e19dd5c1',
     name: 'Analista Financiero',
     area: 'Gestión Presupuestaria',
-    description: 'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos del ENACOM.',
+    description:
+      'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos del ENACOM.',
     workflows: [
       {
         id: 'wf-analista-financiero-1',
@@ -44,7 +61,8 @@ const agentsData = [
     id: '1f513802-7560-4067-a3dd-90c50758a76d',
     name: 'Analista Contable',
     area: 'Contabilidad y Tesorería',
-    description: 'Genera estados contables y consolida información financiera para auditorías internas y externas.',
+    description:
+      'Genera estados contables y consolida información financiera para auditorías internas y externas.',
     workflows: [
       {
         id: 'wf-analista-contable-1',
@@ -163,6 +181,7 @@ const agentsData = [
     name: 'Generador de Informes',
     area: 'Dirección General',
     description: 'Automatiza la redacción de informes ejecutivos con datos actualizados y visualizaciones.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-generador-informes-1',
@@ -178,6 +197,7 @@ const agentsData = [
     name: 'Reporte de Análisis Técnico',
     area: 'Laboratorio y Control Técnico',
     description: 'Genera informes técnicos sobre mediciones y pruebas de laboratorios especializados.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-reporte-tecnico-1',
@@ -193,6 +213,7 @@ const agentsData = [
     name: 'Reporte de Auditoría',
     area: 'Auditoría y Control de Gestión',
     description: 'Consolida hallazgos de auditoría y produce planes de acción para áreas responsables.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-reporte-auditoria-1',
@@ -215,6 +236,7 @@ const agentsData = [
     name: 'Reporte Económico',
     area: 'Economía y Tarifas',
     description: 'Analiza indicadores macroeconómicos y su impacto en los servicios de telecomunicaciones.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-reporte-economico-1',
@@ -230,6 +252,7 @@ const agentsData = [
     name: 'Reporte de Licencias',
     area: 'Dirección Nacional de Servicios TIC',
     description: 'Centraliza renovaciones y vencimientos de licencias, avisando a las áreas responsables.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-reporte-licencias-1',
@@ -245,6 +268,7 @@ const agentsData = [
     name: 'Informe Ejecutivo',
     area: 'Presidencia del ENACOM',
     description: 'Elabora presentaciones ejecutivas con foco en hitos y riesgos institucionales.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-informe-ejecutivo-1',
@@ -260,6 +284,7 @@ const agentsData = [
     name: 'Informe Trimestral',
     area: 'Planeamiento Institucional',
     description: 'Compila resultados del trimestre para el directorio y las áreas de seguimiento.',
+    type: 'Report',
     workflows: [
       {
         id: 'wf-informe-trimestral-1',
@@ -279,22 +304,26 @@ const agentsData = [
   }
 ]
 
+const reportKeywords = [/reporte/i, /informe/i, /generador de informes/i]
+
+function inferAgentType(name: string): 'Analyst' | 'Report' {
+  return reportKeywords.some((pattern) => pattern.test(name)) ? 'Report' : 'Analyst'
+}
+
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 async function main() {
   await prisma.workflow.deleteMany()
-  await prisma.metrics.deleteMany()
+  await prisma.agentUsage.deleteMany()
+  await prisma.agentTrace.deleteMany()
   await prisma.agent.deleteMany()
 
   for (const agent of agentsData) {
-    const metrics = {
-      uses: randomInt(50, 250),
-      downloads: randomInt(25, 160),
-      rewards: randomInt(0, 12)
-    }
-
+    const uses = randomInt(50, 250)
+    const downloads = randomInt(25, 160)
+    const rewards = randomInt(0, 12)
     const votes = randomInt(5, 80)
     const stars = Number((3.5 + Math.random() * 1.5).toFixed(1))
 
@@ -302,13 +331,14 @@ async function main() {
       data: {
         id: agent.id,
         name: agent.name,
+        type: agent.type ?? inferAgentType(agent.name),
         area: agent.area,
         description: agent.description,
+        uses,
+        downloads,
+        rewards,
         stars,
         votes,
-        metrics: {
-          create: metrics
-        },
         workflows: {
           create: agent.workflows
         }
