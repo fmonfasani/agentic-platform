@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import { AgentType, inferAgentType } from '../src/agents/agent-type'
 
 type AgentSeed = {
   id: string
   name: string
   area: string
   description: string
-  type?: 'Analyst' | 'Report'
+  type?: AgentType
   workflows: {
     id: string
     name: string
@@ -181,7 +182,7 @@ const agentsData: AgentSeed[] = [
     name: 'Generador de Informes',
     area: 'Dirección General',
     description: 'Automatiza la redacción de informes ejecutivos con datos actualizados y visualizaciones.',
-    type: 'Report',
+    type: 'reporting',
     workflows: [
       {
         id: 'wf-generador-informes-1',
@@ -197,7 +198,7 @@ const agentsData: AgentSeed[] = [
     name: 'Reporte de Análisis Técnico',
     area: 'Laboratorio y Control Técnico',
     description: 'Genera informes técnicos sobre mediciones y pruebas de laboratorios especializados.',
-    type: 'Report',
+    type: 'reporting',
     workflows: [
       {
         id: 'wf-reporte-tecnico-1',
@@ -213,7 +214,7 @@ const agentsData: AgentSeed[] = [
     name: 'Reporte de Auditoría',
     area: 'Auditoría y Control de Gestión',
     description: 'Consolida hallazgos de auditoría y produce planes de acción para áreas responsables.',
-    type: 'Report',
+    type: 'risk',
     workflows: [
       {
         id: 'wf-reporte-auditoria-1',
@@ -236,7 +237,7 @@ const agentsData: AgentSeed[] = [
     name: 'Reporte Económico',
     area: 'Economía y Tarifas',
     description: 'Analiza indicadores macroeconómicos y su impacto en los servicios de telecomunicaciones.',
-    type: 'Report',
+    type: 'financial',
     workflows: [
       {
         id: 'wf-reporte-economico-1',
@@ -252,7 +253,7 @@ const agentsData: AgentSeed[] = [
     name: 'Reporte de Licencias',
     area: 'Dirección Nacional de Servicios TIC',
     description: 'Centraliza renovaciones y vencimientos de licencias, avisando a las áreas responsables.',
-    type: 'Report',
+    type: 'regulatory',
     workflows: [
       {
         id: 'wf-reporte-licencias-1',
@@ -268,7 +269,7 @@ const agentsData: AgentSeed[] = [
     name: 'Informe Ejecutivo',
     area: 'Presidencia del ENACOM',
     description: 'Elabora presentaciones ejecutivas con foco en hitos y riesgos institucionales.',
-    type: 'Report',
+    type: 'reporting',
     workflows: [
       {
         id: 'wf-informe-ejecutivo-1',
@@ -284,7 +285,7 @@ const agentsData: AgentSeed[] = [
     name: 'Informe Trimestral',
     area: 'Planeamiento Institucional',
     description: 'Compila resultados del trimestre para el directorio y las áreas de seguimiento.',
-    type: 'Report',
+    type: 'reporting',
     workflows: [
       {
         id: 'wf-informe-trimestral-1',
@@ -303,12 +304,6 @@ const agentsData: AgentSeed[] = [
     ]
   }
 ]
-
-const reportKeywords = [/reporte/i, /informe/i, /generador de informes/i]
-
-function inferAgentType(name: string): 'Analyst' | 'Report' {
-  return reportKeywords.some((pattern) => pattern.test(name)) ? 'Report' : 'Analyst'
-}
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
