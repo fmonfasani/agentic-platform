@@ -1,21 +1,149 @@
-import GlowHover from './GlowHover'
+import { useEffect, useState } from 'react'
 
-export function AgentCard({ title, subtitle, onOpen, tone }: {
-  title: string
-  subtitle?: string
+type AgentMetrics = {
+  id: string
+  name: string
+  area?: string | null
+  uses: number
+  downloads: number
+  rewards: number
+  stars: number
+  votes: number
+}
+
+type MetricAction = 'use' | 'download' | 'reward'
+
+type AgentCardProps = {
+  agent: AgentMetrics
   onOpen?: () => void
-  tone?: 'green' | 'blue' | 'slate'
-}) {
-  const ring = tone === 'green' ? 'ring-green500/30' : tone === 'blue' ? 'ring-blue600/30' : 'ring-slate500/30'
+}
+
+const ACTION_LABEL: Record<MetricAction, string> = {
+  use: 'Usar',
+  download: 'Descargar',
+  reward: 'Recompensar'
+}
+
+const ratingOptions = [5, 4, 3, 2, 1]
+
+export default function AgentCard({ agent, onOpen }: AgentCardProps) {
+  const [metrics, setMetrics] = useState(agent)
+  const [pendingStars, setPendingStars] = useState(5)
+  const [busyAction, setBusyAction] = useState<MetricAction | 'rate' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setMetrics(agent)
+    setError(null)
+    setPendingStars(5)
+  }, [agent])
+
+  async function updateMetric(type: MetricAction) {
+    setBusyAction(type)
+    setError(null)
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/${type}`, { method: 'POST' })
+      if (!res.ok) {
+        throw new Error('No se pudo actualizar la métrica')
+      }
+      const data = await res.json()
+      setMetrics(data)
+    } catch (err) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function submitRating() {
+    setBusyAction('rate')
+    setError(null)
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stars: pendingStars })
+      })
+      if (!res.ok) {
+        throw new Error('No se pudo registrar la valoración')
+      }
+      const data = await res.json()
+      setMetrics(data)
+      setPendingStars(5)
+    } catch (err) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const votesLabel = metrics.votes === 1 ? 'voto' : 'votos'
+
   return (
-    <GlowHover>
-      <button
-        onClick={onOpen}
-        className={`w-full text-left rounded-2xl bg-blue700/60 hover:bg-blue700/80 border border-white/10 ring-0 focus-visible:outline-none focus-visible:ring-2 ${ring} shadow-card p-4 transition`}
-      >
-        <div className="text-sm text-white/90 font-semibold">{title}</div>
-        {subtitle && <div className="text-xs text-white/60 mt-1">{subtitle}</div>}
-      </button>
-    </GlowHover>
+    <div className="p-4 rounded-2xl bg-slate-800 shadow-md hover:shadow-lg transition-all border border-slate-700/60">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-white font-semibold">{metrics.name}</h3>
+          {metrics.area && <p className="text-xs text-slate-400">{metrics.area}</p>}
+        </div>
+        <span className="text-xs text-slate-400">{metrics.votes} {votesLabel}</span>
+      </div>
+
+      <div className="flex gap-3 text-sm text-slate-200 mt-3">
+        <span>⭐ {metrics.stars.toFixed(1)}</span>
+        <span>⚡ {metrics.uses}</span>
+        <span>⬇ {metrics.downloads}</span>
+        <span>🏆 {metrics.rewards}</span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(Object.keys(ACTION_LABEL) as MetricAction[]).map((action) => (
+          <button
+            key={action}
+            onClick={() => updateMetric(action)}
+            disabled={busyAction === action}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded text-white text-xs transition"
+          >
+            {ACTION_LABEL[action]}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 text-xs text-slate-300">
+        <span>Valorar:</span>
+        <select
+          value={pendingStars}
+          onChange={(event) => setPendingStars(Number(event.target.value))}
+          className="bg-slate-900 border border-slate-700 text-white text-xs rounded px-2 py-1"
+        >
+          {ratingOptions.map((value) => (
+            <option key={value} value={value}>
+              {value} ⭐
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={submitRating}
+          disabled={busyAction === 'rate'}
+          className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs text-slate-900 font-semibold transition"
+        >
+          Enviar
+        </button>
+      </div>
+
+      {onOpen && (
+        <button
+          onClick={onOpen}
+          className="mt-4 text-xs text-blue-300 hover:text-blue-200 underline"
+          type="button"
+        >
+          Abrir flujo de trabajo
+        </button>
+      )}
+
+      {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+    </div>
   )
 }
