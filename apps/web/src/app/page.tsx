@@ -9,6 +9,7 @@ import AgentChatKitEmbed from '../components/AgentChatKitEmbed'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
 
+// === Tipos base ===
 type AgentSummary = {
   id: string
   name: string
@@ -25,8 +26,11 @@ type AgentSummary = {
 }
 
 type AgentMetrics = AgentSummary & { type: AgentType }
-
 type GroupedAgents = Record<string, AgentMetrics[]>
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 type AgentTrace = {
   id: string
   runId: string
@@ -38,16 +42,40 @@ type AgentTrace = {
   output?: { role: string; content: string }[] | null
 }
 
+<<<<<<< Updated upstream
 type AgentDetails = AgentMetrics & {
   description?: string | null
   updatedAt: string
   traces?: AgentTrace[]
+=======
+type AgentDetail = {
+  id: string
+  name: string
+  area: string
+  description: string | null
+  updatedAt: string
+  metrics: {
+    uses: number
+    downloads: number
+    rewards: number
+    stars: number
+    votes: number
+  }
+  workflows: {
+    id: string
+    name: string
+    status: string
+    model: string
+    platform: string
+  }[]
+>>>>>>> Stashed changes
 }
 
+// === Página principal ===
 export default function Page() {
   const [agents, setAgents] = useState<AgentMetrics[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
-  const [selectedDetails, setSelectedDetails] = useState<AgentDetails | null>(null)
+  const [selectedDetails, setSelectedDetails] = useState<AgentDetail | null>(null)
   const [traces, setTraces] = useState<AgentTrace[]>([])
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
@@ -59,9 +87,8 @@ export default function Page() {
       setLoading(true)
       try {
         const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!res.ok) {
-          throw new Error('No se pudieron obtener los agentes del ENACOM')
-        }
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
+
         const data = (await res.json()) as AgentSummary[]
         const enriched = data.map((agent) => ({
           ...agent,
@@ -82,15 +109,13 @@ export default function Page() {
 
   const grouped = useMemo<GroupedAgents>(() => {
     return agents.reduce<GroupedAgents>((acc, agent) => {
-      if (!acc[agent.type]) {
-        acc[agent.type] = []
-      }
+      if (!acc[agent.type]) acc[agent.type] = []
       acc[agent.type].push(agent)
       return acc
     }, {})
   }, [agents])
 
-  const selectedAgent = useMemo(() => agents.find((agent) => agent.id === openId) ?? null, [agents, openId])
+  const selectedAgent = useMemo(() => agents.find((a) => a.id === openId) ?? null, [agents, openId])
   const selectedAgentId = selectedAgent?.id ?? null
 
   useEffect(() => {
@@ -111,11 +136,9 @@ export default function Page() {
           fetch(`/api/agents/${selectedAgentId}/traces?take=10`, { cache: 'no-store' })
         ])
 
-        if (!detailsRes.ok) {
-          throw new Error('No se pudieron obtener los detalles del agente seleccionado')
-        }
+        if (!detailsRes.ok) throw new Error('No se pudieron obtener los detalles del agente seleccionado')
 
-        const details = (await detailsRes.json()) as AgentDetails
+        const details = (await detailsRes.json()) as AgentDetail
         const traceData = tracesRes.ok ? ((await tracesRes.json()) as AgentTrace[]) : []
 
         if (!active) return
@@ -126,14 +149,11 @@ export default function Page() {
         if (!active) return
         setDetailsError(err instanceof Error ? err.message : 'Error al obtener detalles del agente')
       } finally {
-        if (active) {
-          setDetailsLoading(false)
-        }
+        if (active) setDetailsLoading(false)
       }
     }
 
     loadDetails()
-
     return () => {
       active = false
     }
@@ -170,10 +190,7 @@ export default function Page() {
             {orderedAgentTypes.map((type) => {
               const metadata = agentGroups[type]
               const agentsForType = grouped[type] ?? []
-
-              if (agentsForType.length === 0) {
-                return null
-              }
+              if (agentsForType.length === 0) return null
 
               return (
                 <div key={type} className="space-y-3">
@@ -204,9 +221,10 @@ export default function Page() {
   )
 }
 
+// === Subcomponentes ===
 type WorkflowModalProps = {
   agent: AgentMetrics | null
-  details: AgentDetails | null
+  details: AgentDetail | null
   traces: AgentTrace[]
   loading: boolean
   error: string | null
@@ -216,9 +234,7 @@ type WorkflowModalProps = {
 
 function AgentWorkflowModal({ agent, details, traces, loading, error, onClose, onRefreshTraces }: WorkflowModalProps) {
   useEffect(() => {
-    if (agent) {
-      onRefreshTraces()
-    }
+    if (agent) onRefreshTraces()
   }, [agent?.id, onRefreshTraces])
 
   return (
@@ -246,15 +262,17 @@ function AgentWorkflowModal({ agent, details, traces, loading, error, onClose, o
               <p className="text-sm text-white/60 mt-2">
                 {details.description ?? 'Este agente no tiene descripción documentada en la base.'}
               </p>
-              <p className="text-[11px] text-white/40 mt-3">Última actualización · {new Date(details.updatedAt).toLocaleString()}</p>
+              <p className="text-[11px] text-white/40 mt-3">
+                Última actualización · {new Date(details.updatedAt).toLocaleString()}
+              </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-[#101a29] p-4 space-y-3">
               <h3 className="text-sm font-semibold text-white/80">Integración AgentKit</h3>
-              <InfoRow label="ID OpenAI" value={details.openaiAgentId ?? 'No registrado aún'} />
-              <InfoRow label="Modelo" value={details.model ?? 'gpt-4.1-mini'} />
+              <InfoRow label="ID OpenAI" value={details.metrics?.uses?.toString() ?? 'No registrado aún'} />
+              <InfoRow label="Modelo" value={details.workflows[0]?.model ?? 'gpt-4.1-mini'} />
               <InfoRow
                 label="Instrucciones"
-                value={details.instructions ?? 'Se aplican las instrucciones generadas automáticamente en el backend.'}
+                value={details.description ?? 'Se aplican las instrucciones generadas automáticamente en el backend.'}
               />
             </div>
           </div>
@@ -273,10 +291,7 @@ function AgentWorkflowModal({ agent, details, traces, loading, error, onClose, o
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white/80">Chat del agente</h3>
-              <button
-                onClick={onRefreshTraces}
-                className="text-xs text-[#16a34a] hover:text-[#22c55e]"
-              >
+              <button onClick={onRefreshTraces} className="text-xs text-[#16a34a] hover:text-[#22c55e]">
                 Actualizar trazas
               </button>
             </div>
@@ -337,12 +352,7 @@ function TraceCard({ trace }: { trace: AgentTrace }) {
       <div className="flex flex-wrap gap-2 text-xs text-white/50">
         {trace.evaluator && <span>{trace.evaluator}</span>}
         {trace.traceUrl && (
-          <a
-            href={trace.traceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-[#22c55e] hover:underline"
-          >
+          <a href={trace.traceUrl} target="_blank" rel="noreferrer" className="text-[#22c55e] hover:underline">
             Ver traza
           </a>
         )}
@@ -360,6 +370,7 @@ function TraceCard({ trace }: { trace: AgentTrace }) {
     </div>
   )
 }
+<<<<<<< Updated upstream
 
 const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentType }[] = [
   {
@@ -396,6 +407,18 @@ function inferAgentType(name: string): AgentType {
       return type
     }
   }
+=======
+// === Helper para clasificar agentes por tipo ===
+function inferAgentType(name: string): AgentType {
+  const normalized = name.toLowerCase()
+
+  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
+  if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
+  if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
+  if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
+  if (normalized.includes('riesgo') || normalized.includes('riesgos')) return 'risk'
+  if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
+>>>>>>> Stashed changes
 
   return 'general'
 }
