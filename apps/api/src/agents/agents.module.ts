@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { AgentRunnerService } from './agent-runner.service'
 import { AgentsController } from './agents.controller'
+import { AgentsService } from './agents.service'
+import { AgentTraceService } from './tracing/agent-trace.service'
 import { MetricsController } from './metrics/metrics.controller'
 import { MetricsService } from './metrics/metrics.service'
 
 @Module({
   controllers: [AgentsController, MetricsController],
-  providers: [MetricsService, PrismaService]
+  providers: [AgentsService, MetricsService, AgentRunnerService, AgentTraceService, PrismaService]
 })
 export class AgentsModule {}

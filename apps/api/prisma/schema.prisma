@@ -20,8 +20,12 @@ model Agent {
   rewards     Int         @default(0)
   stars       Float       @default(0)
   votes       Int         @default(0)
+  openaiAgentId String?
+  model         String?    @default("gpt-4.1-mini")
+  instructions  String?
   updatedAt   DateTime    @updatedAt
   usages      AgentUsage[]
+  traces      AgentTrace[]
 }
 
 model AgentUsage {
@@ -31,4 +35,18 @@ model AgentUsage {
   value     Float?
   createdAt DateTime @default(now())
   Agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model AgentTrace {
+  id         String   @id @default(uuid())
+  agentId    String
+  runId      String
+  status     String
+  grade      Float?
+  evaluator  String?
+  traceUrl   String?
+  input      String?
+  output     String?
+  createdAt  DateTime @default(now())
+  Agent      Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
