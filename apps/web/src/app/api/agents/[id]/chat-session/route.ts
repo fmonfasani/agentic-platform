@@ -1,0 +1,6 @@
+import { NextRequest } from 'next/server'
+import { forwardToEnacom } from '../../_utils'
+
+export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+  return forwardToEnacom(`/agents/${params.id}/chat-session`, { method: 'POST' })
+}
