@@ -76,12 +76,4 @@ export class MetricsService {
     })
   }
 
-  async listAgents() {
-    return this.prisma.agent.findMany({
-      select: METRIC_SELECT,
-      orderBy: {
-        name: 'asc'
-      }
-    })
-  }
 }

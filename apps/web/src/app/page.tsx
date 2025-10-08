@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AgentCard } from '@agents-hub/ui'
 import { agentGroups, orderedAgentTypes } from '../lib/agents-data'
 import { SectionTitle } from '../lib/ui'
 import AgentModal from '../components/AgentModal'
+import AgentChatKitEmbed from '../components/AgentChatKitEmbed'
 
 type AgentMetrics = {
   id: string
@@ -16,13 +17,37 @@ type AgentMetrics = {
   rewards: number
   stars: number
   votes: number
+  openaiAgentId?: string | null
+  model?: string | null
+  instructions?: string | null
 }
 
 type GroupedAgents = Record<string, AgentMetrics[]>
 
+type AgentTrace = {
+  id: string
+  runId: string
+  status: string
+  grade: number | null
+  evaluator: string | null
+  traceUrl: string | null
+  createdAt: string
+  output?: { role: string; content: string }[] | null
+}
+
+type AgentDetails = AgentMetrics & {
+  description?: string | null
+  updatedAt: string
+  traces?: AgentTrace[]
+}
+
 export default function Page() {
   const [agents, setAgents] = useState<AgentMetrics[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
+  const [selectedDetails, setSelectedDetails] = useState<AgentDetails | null>(null)
+  const [traces, setTraces] = useState<AgentTrace[]>([])
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,6 +84,65 @@ export default function Page() {
   }, [agents])
 
   const selectedAgent = useMemo(() => agents.find((agent) => agent.id === openId) ?? null, [agents, openId])
+  const selectedAgentId = selectedAgent?.id ?? null
+
+  useEffect(() => {
+    if (!selectedAgentId) {
+      setSelectedDetails(null)
+      setTraces([])
+      return
+    }
+
+    let active = true
+    setDetailsLoading(true)
+    setDetailsError(null)
+
+    async function loadDetails() {
+      try {
+        const [detailsRes, tracesRes] = await Promise.all([
+          fetch(`/api/agents/${selectedAgentId}`, { cache: 'no-store' }),
+          fetch(`/api/agents/${selectedAgentId}/traces?take=10`, { cache: 'no-store' })
+        ])
+
+        if (!detailsRes.ok) {
+          throw new Error('No se pudieron obtener los detalles del agente seleccionado')
+        }
+
+        const details = (await detailsRes.json()) as AgentDetails
+        const traceData = tracesRes.ok ? ((await tracesRes.json()) as AgentTrace[]) : []
+
+        if (!active) return
+        setSelectedDetails(details)
+        setTraces(traceData)
+      } catch (err) {
+        console.error(err)
+        if (!active) return
+        setDetailsError(err instanceof Error ? err.message : 'Error al obtener detalles del agente')
+      } finally {
+        if (active) {
+          setDetailsLoading(false)
+        }
+      }
+    }
+
+    loadDetails()
+
+    return () => {
+      active = false
+    }
+  }, [selectedAgentId])
+
+  const refreshTraces = useCallback(async () => {
+    if (!selectedAgentId) return
+    try {
+      const response = await fetch(`/api/agents/${selectedAgentId}/traces?take=10`, { cache: 'no-store' })
+      if (!response.ok) return
+      const traceData = (await response.json()) as AgentTrace[]
+      setTraces(traceData)
+    } catch (error) {
+      console.error('No se pudieron actualizar las trazas del agente', error)
+    }
+  }, [selectedAgentId])
 
   return (
     <div className="p-8">
@@ -102,123 +186,172 @@ export default function Page() {
         </section>
       )}
 
-      <AgentWorkflowModal agent={selectedAgent} onClose={() => setOpenId(null)} />
+      <AgentWorkflowModal
+        agent={selectedAgent}
+        details={selectedDetails}
+        traces={traces}
+        loading={detailsLoading}
+        error={detailsError}
+        onClose={() => setOpenId(null)}
+        onRefreshTraces={refreshTraces}
+      />
     </div>
   )
 }
 
 type WorkflowModalProps = {
   agent: AgentMetrics | null
+  details: AgentDetails | null
+  traces: AgentTrace[]
+  loading: boolean
+  error: string | null
   onClose: () => void
+  onRefreshTraces: () => void
 }
 
-function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
-  const [input, setInput] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [log, setLog] = useState<string[]>([
-    'Necesito generar un análisis detallado del último trimestre',
-    'Entendido. Iniciando proceso de análisis. Por favor, especifique los parámetros requeridos o adjunte los archivos necesarios.'
-  ])
-
+function AgentWorkflowModal({ agent, details, traces, loading, error, onClose, onRefreshTraces }: WorkflowModalProps) {
   useEffect(() => {
     if (agent) {
-      setLog([
-        `Se abrió el agente ${agent.name} (${agent.area ?? 'sin área asignada'})`,
-        'Indique las instrucciones para ejecutar un nuevo flujo de trabajo.'
-      ])
-      setInput('')
+      onRefreshTraces()
     }
-  }, [agent?.id])
-
-  async function run(action: string) {
-    if (!agent) return
-    setBusy(true)
-    try {
-      const res = await fetch(`/api/agents/${agent.id}/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, action })
-      })
-
-      if (!res.ok) {
-        throw new Error('No se pudo ejecutar el flujo del agente')
-      }
-
-      const data = await res.json()
-      setLog((history) => [...history, `▶ ${action}`, `✔ ${data.status} · ${data.runId}`])
-    } catch (err) {
-      console.error(err)
-      const message = err instanceof Error ? err.message : 'Error inesperado al ejecutar el flujo'
-      setLog((history) => [...history, `⚠️ ${message}`])
-    } finally {
-      setBusy(false)
-    }
-  }
+  }, [agent?.id, onRefreshTraces])
 
   return (
-    <AgentModal open={!!agent} onClose={onClose}>
+    <AgentModal
+      open={!!agent}
+      onClose={onClose}
+      title={agent ? `${agent.name}` : 'Agente ENACOM'}
+      description={agent?.area ?? undefined}
+    >
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white/90">{agent?.name ?? 'Agente ENACOM'}</h2>
-            {agent?.area && <p className="text-xs text-white/60">{agent.area}</p>}
+        {loading && (
+          <div className="rounded-lg border border-white/10 bg-[#0f1a2a] px-4 py-3 text-white/70 text-sm">
+            Cargando información del agente...
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-wrap gap-2">
-          {[
-            'Análisis Avanzado',
-            'Procesamiento de Datos',
-            'Visualización',
-            'Automatización',
-            'Generación de Reportes',
-            'Integración API'
-          ].map((c) => (
-            <span key={c} className="px-3 py-1 text-sm bg-[#1c2736] rounded-lg border border-white/10">
-              {c}
-            </span>
-          ))}
-        </div>
+        {error && (
+          <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>
+        )}
 
-        <div className="rounded-xl bg-[#101b29] border border-white/10 p-4 space-y-3 text-sm text-white/80">
-          {log.map((message, index) => (
-            <div
-              key={index}
-              className={`rounded-md px-3 py-2 ${
-                index === 0 ? 'bg-green-500/10 text-white/90' : 'bg-white/15 text-white/80'
-              }`}
-            >
-              {message}
+        {details && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-[#101a29] p-4">
+              <h3 className="text-sm font-semibold text-white/80">Descripción</h3>
+              <p className="text-sm text-white/60 mt-2">
+                {details.description ?? 'Este agente no tiene descripción documentada en la base.'}
+              </p>
+              <p className="text-[11px] text-white/40 mt-3">Última actualización · {new Date(details.updatedAt).toLocaleString()}</p>
             </div>
-          ))}
-          <textarea
-            className="w-full h-24 rounded-xl bg-[#0b131f] border border-white/10 p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#16a34a]"
-            placeholder="Ingrese su consulta o instrucciones..."
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {['Archivo', 'Entrada de Voz', 'Video', 'Enlace'].map((label) => (
-              <button
-                key={label}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 bg-[#16202f] hover:bg-[#1f2d3f] transition"
-              >
-                Adjuntar {label}
-              </button>
-            ))}
+            <div className="rounded-xl border border-white/10 bg-[#101a29] p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white/80">Integración AgentKit</h3>
+              <InfoRow label="ID OpenAI" value={details.openaiAgentId ?? 'No registrado aún'} />
+              <InfoRow label="Modelo" value={details.model ?? 'gpt-4.1-mini'} />
+              <InfoRow
+                label="Instrucciones"
+                value={details.instructions ?? 'Se aplican las instrucciones generadas automáticamente en el backend.'}
+              />
+            </div>
           </div>
-          <button
-            disabled={busy}
-            onClick={() => run('Ejecutar Proceso')}
-            className="bg-[#16a34a] hover:bg-[#15803d] px-5 py-2 rounded-lg font-semibold text-sm text-white transition"
-          >
-            ▶ Ejecutar Proceso
-          </button>
-        </div>
+        )}
+
+        {agent && (
+          <div className="grid md:grid-cols-4 gap-3">
+            <MetricPill label="Usos" value={agent.uses} />
+            <MetricPill label="Descargas" value={agent.downloads} />
+            <MetricPill label="Recompensas" value={agent.rewards} />
+            <MetricPill label="Estrellas" value={`${agent.stars.toFixed(2)} (${agent.votes})`} />
+          </div>
+        )}
+
+        {agent && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white/80">Chat del agente</h3>
+              <button
+                onClick={onRefreshTraces}
+                className="text-xs text-[#16a34a] hover:text-[#22c55e]"
+              >
+                Actualizar trazas
+              </button>
+            </div>
+            <AgentChatKitEmbed
+              agentId={agent.id}
+              agentName={agent.name}
+              onConversationComplete={onRefreshTraces}
+            />
+          </div>
+        )}
+
+        {traces.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-white/80">Últimas ejecuciones</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {traces.map((trace) => (
+                <TraceCard key={trace.id} trace={trace} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </AgentModal>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-wide text-white/40">{label}</p>
+      <p className="text-sm text-white/70 break-words">{value}</p>
+    </div>
+  )
+}
+
+function MetricPill({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#101a29] px-4 py-3">
+      <p className="text-xs text-white/50">{label}</p>
+      <p className="text-lg font-semibold text-white/90">{value}</p>
+    </div>
+  )
+}
+
+function TraceCard({ trace }: { trace: AgentTrace }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#0f1928] p-4 text-sm text-white/80 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs text-white/60">
+          <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">{trace.status}</span>
+          <span>{new Date(trace.createdAt).toLocaleString()}</span>
+        </div>
+        <div className="text-xs text-white/50">{trace.runId}</div>
+      </div>
+      <div className="text-xs text-white/60">
+        {trace.grade !== null ? `Evaluación automática: ${(trace.grade * 100).toFixed(0)}%` : 'Sin evaluación automática'}
+      </div>
+      <div className="flex flex-wrap gap-2 text-xs text-white/50">
+        {trace.evaluator && <span>{trace.evaluator}</span>}
+        {trace.traceUrl && (
+          <a
+            href={trace.traceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#22c55e] hover:underline"
+          >
+            Ver traza
+          </a>
+        )}
+      </div>
+      {Array.isArray(trace.output) && trace.output.length > 0 && (
+        <div className="rounded-lg border border-white/5 bg-black/10 p-3 space-y-2">
+          {trace.output.slice(-2).map((message, index) => (
+            <p key={index} className="text-xs text-white/60">
+              <span className="font-semibold text-white/70">{message.role}: </span>
+              {message.content}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
