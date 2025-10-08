@@ -1,0 +1,30 @@
+{
+  "name": "@agents-hub/ui",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "pnpm -C apps/web dev",
+    "build": "pnpm -C apps/web build",
+    "start": "pnpm -C apps/web build && pnpm -C apps/web start",
+    "lint": "echo 'add your linter'",
+    "format": "prettier -w .",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "prettier": "^3.3.3",
+    "rimraf": "^5.0.10",
+    "turbo": "^2.0.6"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
