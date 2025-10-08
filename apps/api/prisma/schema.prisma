@@ -1,0 +1,34 @@
+// Prisma schema for ENACOM agent metrics
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id          String      @id @default(uuid())
+  name        String
+  type        String
+  description String?
+  area        String?
+  uses        Int         @default(0)
+  downloads   Int         @default(0)
+  rewards     Int         @default(0)
+  stars       Float       @default(0)
+  votes       Int         @default(0)
+  updatedAt   DateTime    @updatedAt
+  usages      AgentUsage[]
+}
+
+model AgentUsage {
+  id        String   @id @default(uuid())
+  agentId   String
+  action    String
+  value     Float?
+  createdAt DateTime @default(now())
+  Agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
