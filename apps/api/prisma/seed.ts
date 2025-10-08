@@ -2,18 +2,138 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const agents = [
+const agentsData = [
   {
-    id: 'ccf2987a-7710-4a75-b566-2e229bf6dc2e',
+    id: '9b8d4331-1fc3-4cbe-a595-d02fa7c75f4b',
+    name: 'Analista Técnico',
+    area: 'Infraestructura y Radiocomunicaciones',
+    description: 'Supervisa la infraestructura técnica y coordina tareas de radiocomunicaciones para garantizar la cobertura nacional.',
+    workflows: [
+      {
+        id: 'wf-analista-tecnico-1',
+        name: 'Control de Espectro Radioeléctrico',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-analista-tecnico-2',
+        name: 'Diagnóstico de Equipamiento',
+        status: 'draft',
+        model: 'gpt-4o-mini',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: '1a9efb77-02cc-49db-bc0e-7cf9e19dd5c1',
+    name: 'Analista Financiero',
+    area: 'Gestión Presupuestaria',
+    description: 'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos del ENACOM.',
+    workflows: [
+      {
+        id: 'wf-analista-financiero-1',
+        name: 'Evaluación Presupuestaria Anual',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: '1f513802-7560-4067-a3dd-90c50758a76d',
     name: 'Analista Contable',
     area: 'Contabilidad y Tesorería',
-    description: 'Evalúa informes financieros y balances contables',
-    stars: 4.8,
-    votes: 74,
-    metrics: { uses: 324, downloads: 152, rewards: 13 },
+    description: 'Genera estados contables y consolida información financiera para auditorías internas y externas.',
     workflows: [
-      { name: 'Revisión de estados contables' },
-      { name: 'Análisis de gastos trimestrales' }
+      {
+        id: 'wf-analista-contable-1',
+        name: 'Conciliación de Estados Contables',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-analista-contable-2',
+        name: 'Control de Ejecución Mensual',
+        status: 'running',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: '9d89184f-e36f-4cb8-9f5c-3a700ec367eb',
+    name: 'Analista de Licencias',
+    area: 'Gestión de Licencias y Autorizaciones',
+    description: 'Evalúa solicitudes de licencias TIC y asesora a los actores en el cumplimiento regulatorio.',
+    workflows: [
+      {
+        id: 'wf-analista-licencias-1',
+        name: 'Evaluación de Expedientes TIC',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: 'c582e126-b417-4f36-8f13-9c7849f86603',
+    name: 'Analista de Mercado',
+    area: 'Economía y Competencia',
+    description: 'Monitorea precios, oferta y demanda del mercado TIC para detectar oportunidades regulatorias.',
+    workflows: [
+      {
+        id: 'wf-analista-mercado-1',
+        name: 'Monitoreo de Competencia Regional',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-analista-mercado-2',
+        name: 'Informe de Tendencias Tarifarias',
+        status: 'ready',
+        model: 'gpt-4o-mini',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: '3f65cccb-3d2b-4c38-b81b-f55f1dd95b54',
+    name: 'Analista de Riesgo',
+    area: 'Auditoría Interna',
+    description: 'Identifica riesgos operativos y sugiere medidas de mitigación en los procesos críticos del organismo.',
+    workflows: [
+      {
+        id: 'wf-analista-riesgo-1',
+        name: 'Mapa de Riesgos Operativos',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
+    ]
+  },
+  {
+    id: '68dd8e4f-3e9f-4a67-9d8b-2d7be6ab2b31',
+    name: 'Analista de Datos',
+    area: 'Tecnologías de la Información',
+    description: 'Integra fuentes de datos del sector para proveer tableros y métricas estratégicas.',
+    workflows: [
+      {
+        id: 'wf-analista-datos-1',
+        name: 'Pipeline de Integración TIC',
+        status: 'running',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-analista-datos-2',
+        name: 'Análisis de Calidad de Datos',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
@@ -21,202 +141,183 @@ const agents = [
     name: 'Analista Estratégico',
     area: 'Planeamiento y Regulación',
     description: 'Evalúa y ejecuta análisis estratégicos para ENACOM',
-    stars: 4.8,
-    votes: 10,
-    metrics: { uses: 196, downloads: 126, rewards: 1 },
-    workflows: [{ name: 'Evaluar Política de Telecomunicaciones' }]
-  },
-  {
-    id: '3b711bf4-7e2a-4a81-92cc-8e0ba36e89a6',
-    name: 'Analista Técnico',
-    area: 'Infraestructura y Radiocomunicaciones',
-    description: 'Supervisa la infraestructura de redes y el uso del espectro radioeléctrico',
-    stars: 4.7,
-    votes: 58,
-    metrics: { uses: 412, downloads: 189, rewards: 15 },
     workflows: [
-      { name: 'Inspección de antenas regionales' },
-      { name: 'Validación de cumplimiento espectral' }
+      {
+        id: 'wf-001',
+        name: 'Evaluar Política de Telecomunicaciones',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-analista-estrategico-2',
+        name: 'Escenarios de Cobertura Digital',
+        status: 'ready',
+        model: 'gpt-4o-mini',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: '98ef5847-8f70-41e5-a03b-1b83668c3fc9',
-    name: 'Analista Financiero',
-    area: 'Gestión Presupuestaria',
-    description: 'Monitorea el presupuesto operativo y proyecciones financieras',
-    stars: 4.6,
-    votes: 63,
-    metrics: { uses: 287, downloads: 134, rewards: 9 },
-    workflows: [
-      { name: 'Optimización de asignaciones presupuestarias' },
-      { name: 'Proyección de flujo de caja institucional' }
-    ]
-  },
-  {
-    id: '027a4309-2d95-4b30-97cc-0a16b447f1fb',
-    name: 'Analista de Licencias',
-    area: 'Gestión de Licencias y Autorizaciones',
-    description: 'Evalúa solicitudes y renovaciones de licencias de servicios TIC',
-    stars: 4.5,
-    votes: 41,
-    metrics: { uses: 256, downloads: 118, rewards: 7 },
-    workflows: [
-      { name: 'Control de documentación regulatoria' },
-      { name: 'Seguimiento de expedientes críticos' }
-    ]
-  },
-  {
-    id: '04b3b7d4-2f73-41d7-9fd2-80d56a82436f',
-    name: 'Analista de Mercado',
-    area: 'Economía y Competencia',
-    description: 'Analiza tendencias de mercado y escenarios competitivos del sector',
-    stars: 4.9,
-    votes: 52,
-    metrics: { uses: 344, downloads: 201, rewards: 19 },
-    workflows: [
-      { name: 'Reporte de participación de mercado' },
-      { name: 'Simulación de impacto tarifario' }
-    ]
-  },
-  {
-    id: 'a05c53f0-9446-4c79-9d39-7a0f6d203b20',
-    name: 'Analista de Riesgo',
-    area: 'Auditoría Interna',
-    description: 'Identifica riesgos operativos y de cumplimiento en procesos críticos',
-    stars: 4.4,
-    votes: 39,
-    metrics: { uses: 198, downloads: 94, rewards: 6 },
-    workflows: [
-      { name: 'Mapa de riesgos institucionales' },
-      { name: 'Plan de mitigación regulatoria' }
-    ]
-  },
-  {
-    id: 'b8f45f2f-6166-4a31-a053-984647fa829b',
-    name: 'Analista de Datos',
-    area: 'Tecnologías de la Información',
-    description: 'Integra fuentes de datos y desarrolla tableros ejecutivos',
-    stars: 4.9,
-    votes: 81,
-    metrics: { uses: 521, downloads: 309, rewards: 27 },
-    workflows: [
-      { name: 'Consolidación de datasets estratégicos' },
-      { name: 'Generación de tablero ENACOM 360' }
-    ]
-  },
-  {
-    id: 'f3e2b7ce-71e0-4b75-b1c6-3ab6056ff34e',
+    id: '2c68640b-6b63-45bc-9adc-e689b9b9b09c',
     name: 'Generador de Informes',
     area: 'Dirección General',
-    description: 'Compila información transversal para presentaciones institucionales',
-    stars: 4.3,
-    votes: 28,
-    metrics: { uses: 142, downloads: 203, rewards: 8 },
+    description: 'Automatiza la redacción de informes ejecutivos con datos actualizados y visualizaciones.',
     workflows: [
-      { name: 'Informe ejecutivo semanal' },
-      { name: 'Síntesis de indicadores críticos' }
+      {
+        id: 'wf-generador-informes-1',
+        name: 'Informe Ejecutivo Semanal',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: '5d2b36fd-04e4-4f42-9d6c-8f9d5c04005c',
+    id: '44bf8267-43b5-4d52-8f52-ecdb54bc3d56',
     name: 'Reporte de Análisis Técnico',
     area: 'Laboratorio y Control Técnico',
-    description: 'Genera reportes técnicos sobre mediciones e inspecciones de campo',
-    stars: 4.6,
-    votes: 32,
-    metrics: { uses: 178, downloads: 241, rewards: 12 },
+    description: 'Genera informes técnicos sobre mediciones y pruebas de laboratorios especializados.',
     workflows: [
-      { name: 'Consolidado de mediciones radioeléctricas' }
+      {
+        id: 'wf-reporte-tecnico-1',
+        name: 'Resumen de Ensayos de Laboratorio',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: '95f2940f-6f6f-4f69-8728-a9a4e136d6fc',
+    id: 'c57a4a5d-4973-4d25-8321-4ca6d0c08266',
     name: 'Reporte de Auditoría',
     area: 'Auditoría y Control de Gestión',
-    description: 'Documenta hallazgos y recomendaciones de auditorías internas',
-    stars: 4.5,
-    votes: 46,
-    metrics: { uses: 163, downloads: 227, rewards: 14 },
+    description: 'Consolida hallazgos de auditoría y produce planes de acción para áreas responsables.',
     workflows: [
-      { name: 'Seguimiento de recomendaciones de auditoría' }
+      {
+        id: 'wf-reporte-auditoria-1',
+        name: 'Plan de Acción Correctiva',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-reporte-auditoria-2',
+        name: 'Resumen de Auditorías Regionales',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: '71590cb3-63f8-4c75-8e89-8c1268697bfa',
+    id: '4e98f598-31cb-4f71-8ee9-3fd083fdc090',
     name: 'Reporte Económico',
     area: 'Economía y Tarifas',
-    description: 'Elabora reportes macroeconómicos y análisis tarifario',
-    stars: 4.7,
-    votes: 54,
-    metrics: { uses: 205, downloads: 256, rewards: 16 },
+    description: 'Analiza indicadores macroeconómicos y su impacto en los servicios de telecomunicaciones.',
     workflows: [
-      { name: 'Informe de variaciones tarifarias' },
-      { name: 'Monitoreo de indicadores macro' }
+      {
+        id: 'wf-reporte-economico-1',
+        name: 'Indicadores Macroeconómicos TIC',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: 'c3a35165-5ba4-44a9-9614-17e6ae2c38a8',
+    id: 'a6ca79f3-02dc-4f92-94f1-589836dcad95',
     name: 'Reporte de Licencias',
     area: 'Dirección Nacional de Servicios TIC',
-    description: 'Sistematiza el estado de licencias y autorizaciones vigentes',
-    stars: 4.2,
-    votes: 26,
-    metrics: { uses: 149, downloads: 198, rewards: 5 },
+    description: 'Centraliza renovaciones y vencimientos de licencias, avisando a las áreas responsables.',
     workflows: [
-      { name: 'Panel de renovaciones pendientes' }
+      {
+        id: 'wf-reporte-licencias-1',
+        name: 'Seguimiento de Renovaciones',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: 'fdf7d8f1-09e0-4f8b-91a2-0d3d1842e7b2',
+    id: 'abf50f16-3ae4-4c5b-86d0-7b30bf71f2d5',
     name: 'Informe Ejecutivo',
     area: 'Presidencia del ENACOM',
-    description: 'Sintetiza avances clave y métricas de gestión para la presidencia',
-    stars: 4.9,
-    votes: 91,
-    metrics: { uses: 367, downloads: 312, rewards: 24 },
+    description: 'Elabora presentaciones ejecutivas con foco en hitos y riesgos institucionales.',
     workflows: [
-      { name: 'Briefing semanal para presidencia' },
-      { name: 'Informe de hitos regulatorios' }
+      {
+        id: 'wf-informe-ejecutivo-1',
+        name: 'Reporte de Hitos Mensuales',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      }
     ]
   },
   {
-    id: 'e3a209ff-96d1-4b59-b0b9-8dd3cf1c2993',
+    id: '6a256abe-dc38-4f37-b046-09bb05f0e534',
     name: 'Informe Trimestral',
     area: 'Planeamiento Institucional',
-    description: 'Compila resultados trimestrales y métricas estratégicas del organismo',
-    stars: 4.6,
-    votes: 47,
-    metrics: { uses: 238, downloads: 284, rewards: 11 },
+    description: 'Compila resultados del trimestre para el directorio y las áreas de seguimiento.',
     workflows: [
-      { name: 'Reporte de cumplimiento de KPIs' },
-      { name: 'Resumen ejecutivo para directorio' }
+      {
+        id: 'wf-informe-trimestral-1',
+        name: 'Reporte Integral Trimestral',
+        status: 'ready',
+        model: 'gpt-4o',
+        platform: 'OpenAI'
+      },
+      {
+        id: 'wf-informe-trimestral-2',
+        name: 'Análisis Comparativo Interanual',
+        status: 'ready',
+        model: 'gpt-4o-mini',
+        platform: 'OpenAI'
+      }
     ]
   }
 ]
+
+function randomInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
 
 async function main() {
   await prisma.workflow.deleteMany()
   await prisma.metrics.deleteMany()
   await prisma.agent.deleteMany()
 
-  for (const agent of agents) {
+  for (const agent of agentsData) {
+    const metrics = {
+      uses: randomInt(50, 250),
+      downloads: randomInt(25, 160),
+      rewards: randomInt(0, 12)
+    }
+
+    const votes = randomInt(5, 80)
+    const stars = Number((3.5 + Math.random() * 1.5).toFixed(1))
+
     await prisma.agent.create({
       data: {
         id: agent.id,
         name: agent.name,
         area: agent.area,
         description: agent.description,
-        stars: agent.stars,
-        votes: agent.votes,
-        metrics: { create: agent.metrics },
-        workflows: { create: agent.workflows }
+        stars,
+        votes,
+        metrics: {
+          create: metrics
+        },
+        workflows: {
+          create: agent.workflows
+        }
       }
     })
   }
 }
 
 main()
-  .then(() => console.log('Seed completo ✅'))
   .catch((error) => {
     console.error(error)
     process.exit(1)

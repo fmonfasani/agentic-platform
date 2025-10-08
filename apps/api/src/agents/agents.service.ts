@@ -19,12 +19,18 @@ export class AgentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    const agents = await this.prisma.agent.findMany({
-      include: { metrics: true },
-      orderBy: { name: 'asc' }
+    return this.prisma.agent.findMany({
+      select: {
+        id: true,
+        name: true,
+        area: true,
+        stars: true,
+        votes: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
     })
-
-    return agents.map((agent) => this.toSummary(agent))
   }
 
   async findById(id: string) {
