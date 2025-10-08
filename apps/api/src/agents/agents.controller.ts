@@ -31,7 +31,7 @@ export class AgentsController {
   }
 
   @Post(':id/rate')
-  rateAgent(@Param('id') id: string, @Body() body: { stars: number }) {
-    return this.agentsService.rateAgent(id, body.stars)
+  rateAgent(@Param('id') id: string, @Body() body: { stars?: number }) {
+    return this.agentsService.rateAgent(id, body?.stars ?? 0)
   }
 }
