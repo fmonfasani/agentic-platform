@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
 const TRACE_SELECT = {
@@ -37,7 +36,7 @@ export class AgentTraceService {
     id: string,
     data: Partial<{ status: string; grade: number | null; evaluator: string | null; traceUrl: string | null; output: unknown }>
   ) {
-    const updateData: Prisma.AgentTraceUpdateInput = {
+    const updateData = {
       status: data.status,
       grade: data.grade,
       evaluator: data.evaluator,
@@ -77,7 +76,7 @@ export class AgentTraceService {
     }
   }
 
-  private deserialize(trace: Prisma.AgentTraceGetPayload<{ select: typeof TRACE_SELECT }>) {
+  private deserialize(trace: TraceRecord): AgentTraceSummary {
     return {
       ...trace,
       input: this.parse(trace.input),
@@ -98,4 +97,20 @@ export class AgentTraceService {
   }
 }
 
-export type AgentTraceSummary = Prisma.AgentTraceGetPayload<{ select: typeof TRACE_SELECT }>
+type TraceRecord = {
+  id: string
+  agentId: string
+  runId: string
+  status: string
+  grade: number | null
+  evaluator: string | null
+  traceUrl: string | null
+  input: string | null
+  output: string | null
+  createdAt: Date
+}
+
+export type AgentTraceSummary = Omit<TraceRecord, 'input' | 'output'> & {
+  input: unknown
+  output: unknown
+}

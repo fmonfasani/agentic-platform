@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
 const AGENT_SUMMARY_SELECT = {
@@ -15,7 +14,7 @@ const AGENT_SUMMARY_SELECT = {
   openaiAgentId: true,
   model: true,
   instructions: true
-} satisfies Prisma.AgentSelect
+} as const
 
 @Injectable()
 export class AgentsService {
@@ -51,7 +50,7 @@ export class AgentsService {
 
   async updateAgentAgentKitMetadata(
     id: string,
-    metadata: Pick<Prisma.AgentUpdateInput, 'openaiAgentId' | 'instructions' | 'model'>
+    metadata: Partial<Pick<AgentSummary, 'openaiAgentId' | 'instructions' | 'model'>>
   ) {
     return this.prisma.agent.update({
       where: { id },
@@ -61,4 +60,17 @@ export class AgentsService {
   }
 }
 
-export type AgentSummary = Prisma.AgentGetPayload<{ select: typeof AGENT_SUMMARY_SELECT }>
+export type AgentSummary = {
+  id: string
+  name: string
+  type: string
+  area: string
+  uses: number
+  downloads: number
+  rewards: number
+  stars: number
+  votes: number
+  openaiAgentId: string | null
+  model: string | null
+  instructions: string | null
+}
