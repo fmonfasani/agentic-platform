@@ -1,4 +1,6 @@
-// Prisma schema for ENACOM agent metrics
+// ===================================================
+// Prisma Schema — platform_agents (by fmonfasani)
+// ===================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -9,10 +11,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===================================================
+// MODELS
+// ===================================================
+
 model Agent {
-  id          String      @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  type        String
+  area        String
   description String?
   area        String?
   uses        Int         @default(0)
@@ -28,13 +34,31 @@ model Agent {
   traces      AgentTrace[]
 }
 
-model AgentUsage {
+model Metrics {
+  id         String  @id @default(uuid())
+  uses       Int     @default(0)
+  downloads  Int     @default(0)
+  rewards    Int     @default(0)
+
+  // Relación 1:1 con Agent
+  agentId    String  @unique
+  agent      Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model Workflow {
   id        String   @id @default(uuid())
-  agentId   String
-  action    String
+  name      String
+  status    String   @default("ready")
+  model     String   @default("gpt-4o")
+  platform  String   @default("OpenAI")
+  action    String?
   value     Float?
+
+  // Relación N:1 con Agent
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
-  Agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model AgentTrace {

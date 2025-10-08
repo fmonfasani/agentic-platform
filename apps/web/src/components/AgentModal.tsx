@@ -1,4 +1,5 @@
 'use client'
+import type { ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 
@@ -39,7 +40,6 @@ export default function AgentModal({ open, onClose, title, description, children
               </div>
             )}
 
-            {/* Contenido dinámico */}
             {children}
           </motion.div>
         </motion.div>
