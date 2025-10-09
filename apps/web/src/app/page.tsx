@@ -12,6 +12,7 @@ const orderedColumns: AgentCategory[] = orderedAgentTypes
 
 type AgentSummary = AgentCardData & {
   description: string | null
+  type?: AgentCategory
 }
 
 type ApiAgent = {
@@ -25,6 +26,20 @@ type ApiAgent = {
   rewards: number
   stars: number
   votes: number
+  openaiAgentId?: string | null
+  model?: string | null
+  instructions?: string | null
+}
+
+type AgentTrace = {
+  id: string
+  runId: string
+  status: string
+  grade: number | null
+  evaluator: string | null
+  traceUrl: string | null
+  createdAt: string
+  output?: { role: string; content: string }[] | null
 }
 
 export default function Page() {
@@ -40,22 +55,16 @@ export default function Page() {
     async function loadAgents() {
       setLoading(true)
       try {
-        const response = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!response.ok) throw new Error('No se pudieron obtener los agentes registrados')
-        const data = (await response.json()) as ApiAgent[]
-        const mapped = data.map<AgentSummary>((agent) => ({
-          id: agent.id,
-          name: agent.name,
-          area: agent.area,
+        const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes')
+
+        const data = (await res.json()) as ApiAgent[]
+        const enriched: AgentSummary[] = data.map((agent) => ({
+          ...agent,
           description: agent.description ?? null,
-          type: normalizeCategory(agent.type ?? inferAgentType(agent.name)),
-          uses: agent.uses,
-          downloads: agent.downloads,
-          rewards: agent.rewards,
-          stars: agent.stars,
-          votes: agent.votes
+          type: normalizeCategory(agent.type)
         }))
-        setAgents(mapped)
+        setAgents(enriched)
         setError(null)
       } catch (err) {
         console.error(err)
@@ -80,9 +89,7 @@ export default function Page() {
     })
 
     return [...list].sort((a, b) => {
-      if (sortKey === 'stars') {
-        return b.stars - a.stars
-      }
+      if (sortKey === 'stars') return b.stars - a.stars
       return b.uses - a.uses
     })
   }, [agents, filter, search, sortKey])
@@ -95,9 +102,7 @@ export default function Page() {
 
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
-      if (!acc[category]) {
-        acc[category] = []
-      }
+      if (!acc[category]) acc[category] = []
       acc[category].push(agent)
       return acc
     }, emptyGroups)
@@ -109,9 +114,9 @@ export default function Page() {
         <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-950/40 p-8 shadow-2xl">
           <div className="flex flex-col gap-2">
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/70">Sistema de Agentes Autónomos</p>
-            <h1 className="text-3xl font-semibold text-white/90">Panel de Control ENACOM</h1>
+            <h1 className="text-3xl font-semibold text-white/90">Dashboard de Agentes</h1>
             <p className="text-sm text-white/60">
-              Monitoree el uso de los agentes analíticos, informes y reportes estratégicos del Ente Nacional de Comunicaciones.
+              Monitor de agentes.
             </p>
           </div>
 
@@ -187,23 +192,24 @@ export default function Page() {
 }
 
 function normalizeCategory(type: string | null | undefined): AgentCategory {
-  if (!type) return 'general'
-  if (type in agentGroups) {
-    return type as AgentCategory
-  }
+  if (!type) return 'technical'
+  if (type in agentGroups) return type as AgentCategory
   return inferAgentType(type)
 }
 
 function inferAgentType(name: string): AgentCategory {
   const normalized = name.toLowerCase()
 
-  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
-  if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
-  if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
-  if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
-  if (normalized.includes('riesgo') || normalized.includes('auditor')) return 'risk'
-  if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
+  const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentCategory }[] = [
+    { keywords: ['financ', 'contab'], type: 'financial' },
+    { keywords: ['tecnic', 'infra'], type: 'technical' },
+    { keywords: ['reglament', 'licenc'], type: 'regulatory' },
+    { keywords: ['report', 'informe'], type: 'reporting' }
+  ]
 
-  // 👇 Agregar este return por defecto
+  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) return type
+  }
+
   return 'technical'
 }
