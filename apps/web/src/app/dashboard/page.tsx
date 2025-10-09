@@ -27,6 +27,15 @@ type LeaderboardResponse = {
   areas: AreaSummary[]
 }
 
+const DASHBOARD_BASE_URL =
+  process.env.NEXT_PUBLIC_ENACOM_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/?api\/?$/, '') ??
+  ''
+
+const DASHBOARD_LEADERBOARD_ENDPOINT = DASHBOARD_BASE_URL
+  ? `${DASHBOARD_BASE_URL.replace(/\/$/, '')}/dashboard/leaderboard`
+  : '/dashboard/leaderboard'
+
 export default function DashboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -35,7 +44,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const res = await fetch('http://localhost:3001/dashboard/leaderboard')
+        const res = await fetch(DASHBOARD_LEADERBOARD_ENDPOINT)
         if (!res.ok) throw new Error('Error al obtener el ranking de agentes')
         const json = (await res.json()) as LeaderboardResponse
         setData(json)
