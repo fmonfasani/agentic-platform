@@ -3,7 +3,7 @@ import {
   Injectable,
   UnsupportedMediaTypeException
 } from '@nestjs/common'
-import { pdf as parsePdf } from 'pdf-parse'
+import parsePdf from 'pdf-parse'
 import { AgentRunnerService } from './agent-runner.service'
 import { AgentTraceService } from './tracing/agent-trace.service'
 
