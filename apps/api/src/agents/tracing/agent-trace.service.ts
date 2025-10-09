@@ -32,6 +32,38 @@ export class AgentTraceService {
       .then((trace) => this.deserialize(trace))
   }
 
+  getTraceById(id: string) {
+    return this.prisma.agentTrace
+      .findUnique({
+        where: { id },
+        select: TRACE_SELECT
+      })
+      .then((trace) => (trace ? this.deserialize(trace) : null))
+  }
+
+  findTraceForAgent(
+    agentId: string,
+    identifiers: { traceId?: string | null; runId?: string | null }
+  ) {
+    const { traceId, runId } = identifiers
+
+    if (!traceId && !runId) {
+      return Promise.resolve(null)
+    }
+
+    return this.prisma.agentTrace
+      .findFirst({
+        where: {
+          agentId,
+          ...(traceId ? { id: traceId } : {}),
+          ...(runId ? { runId } : {})
+        },
+        select: TRACE_SELECT,
+        orderBy: { createdAt: 'desc' }
+      })
+      .then((trace) => (trace ? this.deserialize(trace) : null))
+  }
+
   completeTrace(
     id: string,
     data: Partial<{
