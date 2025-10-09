@@ -82,6 +82,15 @@ export class AgentRunnerService {
     return this.traceService.listTracesForAgent(agentId, take)
   }
 
+  getOpenAIConfiguration() {
+    const client = this.ensureClient()
+
+    return {
+      client,
+      defaultModel: this.defaultModel
+    }
+  }
+
   private ensureClient() {
     if (!this.client) {
       throw new ServiceUnavailableException('OpenAI AgentKit is not configured. Set OPENAI_API_KEY to enable it.')
