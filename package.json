@@ -9,9 +9,11 @@
     "start": "pnpm -C apps/web build && pnpm -C apps/web start",
     "lint": "echo 'add your linter'",
     "format": "prettier -w .",
-    "test": "jest"
+    "test": "jest",
+    "test:ui": "pnpm -C apps/web test:ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@types/jest": "^29.5.12",
