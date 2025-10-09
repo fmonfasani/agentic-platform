@@ -81,3 +81,13 @@ La integración permite:
 2. Chateá desde el componente ChatKit (o fallback) y pide acciones como “descargar informe”.
 3. Las herramientas configuradas llamarán a los endpoints del backend para registrar cada acción.
 4. Revisa el apartado “Últimas ejecuciones” para ver la traza, la calificación y acceder al enlace externo de seguimiento (`traceUrl`) si está disponible.
+
+## Base de datos y seed
+
+- Para regenerar la base de datos con los agentes demo ejecutá:
+
+  ```bash
+  pnpm -C apps/api prisma db seed
+  ```
+
+- El script `apps/api/prisma/seed.ts` crea agentes con métricas iniciales para la demo del dashboard.
