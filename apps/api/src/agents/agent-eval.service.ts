@@ -32,40 +32,64 @@ export class AgentEvalService {
     }
 
     try {
-      const evalPrompt = `
-Evalúa la calidad del resultado generado por el agente del ENACOM.
+      const criteria = [
+        {
+          id: 'claridad_tecnica',
+          name: 'Claridad técnica',
+          description: 'Evalúa si la respuesta explica conceptos técnicos de forma clara y correcta.'
+        },
+        {
+          id: 'coherencia_institucional',
+          name: 'Coherencia institucional',
+          description: 'Verifica que el mensaje respete el tono y lineamientos institucionales del ENACOM.'
+        },
+        {
+          id: 'nivel_detalle',
+          name: 'Nivel de detalle',
+          description: 'Analiza si la respuesta ofrece el nivel de profundidad adecuado para el pedido.'
+        },
+        {
+          id: 'precision_datos',
+          name: 'Precisión en los datos',
+          description: 'Confirma que los datos aportados sean correctos y estén bien fundamentados.'
+        }
+      ]
 
-### Entrada:
-${trace.input ?? 'Sin información'}
-
-### Salida:
-${trace.output}
-
-### Criterios:
-- Claridad técnica
-- Coherencia institucional
-- Nivel de detalle
-- Precisión en los datos
-
-Responde en JSON con los campos:
-{
-  "grade": 0-1,
-  "feedback": "comentario"
-}`
-
-      const response = await openai.chat.completions.create({
+      const evalPayload: Record<string, any> = {
         model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Sos un evaluador técnico del ENACOM.' },
-          { role: 'user', content: evalPrompt }
-        ],
-        temperature: 0
-      })
+        task_type: 'graded_generation',
+        input: {
+          trace_id: traceId,
+          agent_name: trace.agent?.name ?? 'Desconocido',
+          prompt: trace.input ?? 'Sin información',
+          completion: trace.output
+        },
+        criteria,
+        rubric:
+          'Evalúa la calidad de la respuesta del agente del ENACOM considerando claridad técnica, coherencia institucional, nivel de detalle y precisión de los datos.'
+      }
 
-      const text = response.choices[0]?.message?.content ?? '{}'
-      const parsed = JSON.parse(text)
-      const grade = Math.min(1, Math.max(0, parsed.grade ?? 0))
-      const feedback = parsed.feedback ?? 'Sin comentarios'
+      const response = await (openai.evals.create as any)(evalPayload)
+
+      const result = response?.results?.[0] ?? response?.scores?.[0] ?? null
+      const rawGrade =
+        (typeof result?.score === 'number'
+          ? result.score
+          : typeof result?.grade === 'number'
+            ? result.grade
+            : typeof response?.score === 'number'
+              ? response.score
+              : typeof response?.grade === 'number'
+                ? response.grade
+                : 0)
+      const grade = Math.min(1, Math.max(0, Number.isFinite(rawGrade) ? rawGrade : 0))
+      const feedback =
+        result?.feedback ??
+        result?.reason ??
+        result?.explanation ??
+        response?.feedback ??
+        response?.reason ??
+        'Sin comentarios'
 
       await this.prisma.agentTrace.update({
         where: { id: traceId },
@@ -75,7 +99,15 @@ Responde en JSON con los campos:
       this.logger.log(`✅ Evaluación completada para traza ${traceId}`)
       return { grade, feedback }
     } catch (err: any) {
-      this.logger.error(`❌ Error evaluando traza ${traceId}: ${err.message}`)
+      const errorMessage = err?.response?.data?.error?.message ?? err?.message ?? 'Error desconocido'
+      this.logger.error(`❌ Error evaluando traza ${traceId}: ${errorMessage}`)
+      await this.prisma.agentTrace.update({
+        where: { id: traceId },
+        data: {
+          evaluator: 'auto-eval',
+          feedback: `Error al ejecutar la evaluación automática: ${errorMessage}`
+        }
+      })
     }
   }
 }
