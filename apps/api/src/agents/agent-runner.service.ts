@@ -2,6 +2,7 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import OpenAI from 'openai'
 import { AgentsService } from './agents.service'
 import { MetricsService } from './metrics/metrics.service'
+import { AgentEvalService } from './agent-eval.service'
 import { AgentTraceService, AgentTraceSummary } from './tracing/agent-trace.service'
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
@@ -23,12 +24,12 @@ export class AgentRunnerService {
   private readonly logger = new Logger(AgentRunnerService.name)
   private readonly client: OpenAI | null
   private readonly defaultModel = process.env.OPENAI_AGENT_MODEL ?? 'gpt-4.1-mini'
-  private readonly evalModel = process.env.OPENAI_EVAL_MODEL ?? 'o4-mini'
 
   constructor(
     private readonly agentsService: AgentsService,
     private readonly metricsService: MetricsService,
-    private readonly traceService: AgentTraceService
+    private readonly traceService: AgentTraceService,
+    private readonly evalService: AgentEvalService
   ) {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
@@ -67,15 +68,21 @@ export class AgentRunnerService {
 
     const transcript = this.collectMessages(inputMessages, response)
 
-    const evaluation = await this.evaluateRun(client, transcript)
-
     const finalTrace = await this.traceService.completeTrace(trace.id, {
       status: 'completed',
-      output: transcript,
-      grade: evaluation?.score,
-      evaluator: evaluation?.rubric,
-      traceUrl: evaluation?.traceUrl
+      output: transcript
     })
+
+    const evaluation = await this.evalService.evaluateTrace(finalTrace.id)
+
+    const traceWithEvaluation = evaluation
+      ? {
+          ...finalTrace,
+          grade: evaluation.grade,
+          feedback: evaluation.feedback,
+          evaluator: 'auto-eval'
+        }
+      : finalTrace
 
     return {
       runId,
@@ -85,7 +92,7 @@ export class AgentRunnerService {
       message: transcript[transcript.length - 1]?.content ?? '',
       transcript,
       evaluation,
-      trace: finalTrace
+      trace: traceWithEvaluation
     }
   }
 
@@ -413,44 +420,6 @@ Responde siempre en español y utiliza las herramientas disponibles cuando corre
     }
   }
 
-  private async evaluateRun(client: OpenAI, transcript: ChatMessage[]) {
-    try {
-      const responsesApi = (client as any).responses
-      if (!responsesApi?.create) {
-        throw new ServiceUnavailableException('The installed OpenAI SDK does not expose the Responses API.')
-      }
-
-      const conversation = transcript
-        .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
-        .join('\n')
-
-      const evaluationPrompt = `Evalúa la calidad de la siguiente conversación entre un usuario y un agente del ENACOM.\n` +
-        `Devuelve un JSON con los campos {\"score\": number entre 0 y 1, \"rubric\": string}.\n\n${conversation}`
-
-      const result = await responsesApi.create({
-        model: this.evalModel,
-        input: [
-          { role: 'system', content: 'Eres un evaluador experto en flujos del ENACOM.' },
-          { role: 'user', content: evaluationPrompt }
-        ],
-        response_format: { type: 'json_schema', json_schema: { name: 'evaluation', schema: { type: 'object', properties: { score: { type: 'number' }, rubric: { type: 'string' } }, required: ['score', 'rubric'] } } }
-      })
-
-      const text = this.extractAssistantText(result)
-      if (!text) {
-        throw new Error('Respuesta de evaluación vacía')
-      }
-      const parsed = JSON.parse(text)
-      return {
-        score: parsed.score as number,
-        rubric: parsed.rubric as string,
-        traceUrl: result?.metadata?.trace_url ?? null
-      }
-    } catch (error) {
-      this.logger.warn(`No se pudo evaluar la ejecución del agente: ${error}`)
-      return null
-    }
-  }
 }
 
 export type AgentRunPayload = RunAgentDto
