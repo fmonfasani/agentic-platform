@@ -23,7 +23,7 @@ interface CommandResult {
 const repoRoot = path.resolve(__dirname, '..')
 
 const HEALTH_PROBE_COMMAND =
-  process.env.AGENT_DIAGNOSTICS_HEALTH_COMMAND ?? 'pnpm exec node reporter/health-probe'
+  process.env.AGENT_DIAGNOSTICS_HEALTH_COMMAND ?? 'pnpm exec tsx scripts/api-health-probe.ts'
 const API_TEST_COMMAND =
   process.env.AGENT_DIAGNOSTICS_API_TEST_COMMAND ??
   'pnpm exec jest --config apps/api/jest.config.ts'
