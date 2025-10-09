@@ -1,7 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
+
+type AgentCreateArgs = Parameters<
+  PrismaService['prototype']['agent']['create']
+>[0]
+
+type AgentCreateData = AgentCreateArgs extends { data: infer T }
+  ? T
+  : AgentCreateArgs
 
 const AGENT_SUMMARY_SELECT = {
   id: true,
@@ -55,7 +62,7 @@ export class AgentsService {
     })
   }
 
-  async create(data: Prisma.AgentCreateInput) {
+  async create(data: AgentCreateData) {
     return this.prisma.agent.create({ data })
   }
 
