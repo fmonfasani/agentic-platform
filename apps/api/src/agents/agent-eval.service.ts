@@ -76,7 +76,7 @@ export class AgentEvalService {
     throw new Error('La evaluación excedió el tiempo de espera configurado')
   }
 
-  async evaluateTrace(traceId: string) {
+  async evaluateTrace(traceId: string): Promise<EvalResult | undefined> {
     const trace = await this.prisma.agentTrace.findUnique({
       where: { id: traceId },
       include: { agent: true }
@@ -195,13 +195,15 @@ export class AgentEvalService {
       }) ?? []
       const feedback = feedbackSegments.length ? feedbackSegments.join(' | ') : 'Sin comentarios'
 
+      const evaluator = 'auto-eval'
+
       await this.prisma.agentTrace.update({
         where: { id: traceId },
-        data: { grade, evaluator: 'auto-eval', feedback }
+        data: { grade, evaluator, feedback }
       })
 
       this.logger.log(`✅ Evaluación completada para traza ${traceId}`)
-      return { grade, feedback }
+      return { grade, feedback, evaluator }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.error?.message ?? err?.message ?? 'Error desconocido'
       this.logger.error(`❌ Error evaluando traza ${traceId}: ${errorMessage}`)
@@ -212,6 +214,11 @@ export class AgentEvalService {
           feedback: `Error al ejecutar la evaluación automática: ${errorMessage}`
         }
       })
+      return {
+        grade: null,
+        feedback: `Error al ejecutar la evaluación automática: ${errorMessage}`,
+        evaluator: 'auto-eval'
+      }
     }
   }
 
