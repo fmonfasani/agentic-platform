@@ -48,7 +48,17 @@ export class AgentRunnerService {
       ...traceRecord,
       input: inputMessages,
       output: transcript
-    }
+    })
+
+    const evaluation = await this.evalService.evaluateTrace(finalTrace.id)
+
+    const traceWithEvaluation = evaluation
+      ? {
+          ...finalTrace,
+          grade: evaluation.grade ?? finalTrace.grade,
+          evaluator: 'auto-eval'
+        }
+      : finalTrace
 
     return {
       runId,
@@ -70,6 +80,54 @@ export class AgentRunnerService {
 
   async listTraces(agentId: string, take = 20): Promise<AgentTraceSummary[]> {
     return this.traceService.listTracesForAgent(agentId, take)
+  }
+
+  private ensureClient() {
+    if (!this.client) {
+      throw new ServiceUnavailableException('OpenAI AgentKit is not configured. Set OPENAI_API_KEY to enable it.')
+    }
+
+    return this.client
+  }
+
+  private async ensureAgentRegistration(
+    agentId: string,
+    existingAgent?: Awaited<ReturnType<AgentsService['getAgent']>>
+  ) {
+    const client = this.ensureClient()
+    const agent = existingAgent ?? (await this.agentsService.getAgent(agentId))
+
+    if (agent.openaiAgentId) {
+      return agent.openaiAgentId
+    }
+
+    const agentsApi = (client as any).agents
+    if (!agentsApi?.create) {
+      throw new ServiceUnavailableException('The installed OpenAI SDK does not expose Agent Builder APIs yet.')
+    }
+
+    const instructions =
+      agent.instructions ??
+      `Eres ${agent.name}, un agente del ENACOM especializado en ${agent.area ?? 'gestión y análisis de datos.'}
+Responde siempre en español y utiliza las herramientas disponibles cuando corresponda.`
+
+    const created = await agentsApi.create({
+      name: agent.name,
+      model: agent.model ?? this.defaultModel,
+      instructions,
+      metadata: {
+        agentId,
+        area: agent.area ?? undefined
+      }
+    })
+
+    await this.agentsService.updateAgentAgentKitMetadata(agentId, {
+      openaiAgentId: created.id,
+      instructions,
+      model: agent.model ?? this.defaultModel
+    })
+
+    return created.id as string
   }
 
   private normalizeMessages(payload: RunAgentDto, instructions?: string | null): ChatMessage[] {

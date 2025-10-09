@@ -47,10 +47,9 @@ ${trace.output}
 - Nivel de detalle
 - Precisión en los datos
 
-Responde en JSON con los campos:
+Responde en JSON con el campo:
 {
-  "grade": 0-1,
-  "feedback": "comentario"
+  "grade": 0-1
 }`
 
       const response = await openai.chat.completions.create({
@@ -65,15 +64,14 @@ Responde en JSON con los campos:
       const text = response.choices[0]?.message?.content ?? '{}'
       const parsed = JSON.parse(text)
       const grade = Math.min(1, Math.max(0, parsed.grade ?? 0))
-      const feedback = parsed.feedback ?? 'Sin comentarios'
 
       await this.prisma.agentTrace.update({
         where: { id: traceId },
-        data: { grade, feedback, evaluator: 'auto-eval' }
+        data: { grade, evaluator: 'auto-eval' }
       })
 
       this.logger.log(`✅ Evaluación completada para traza ${traceId}`)
-      return { grade, feedback }
+      return { grade }
     } catch (err: any) {
       this.logger.error(`❌ Error evaluando traza ${traceId}: ${err.message}`)
     }
