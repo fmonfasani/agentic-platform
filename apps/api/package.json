@@ -8,8 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "dev": "ts-node src/main.ts",
-    "test": "jest --config jest.config.ts --runInBand",
-    "postinstall": "prisma generate"
+    "test": "jest --config jest.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.8",
