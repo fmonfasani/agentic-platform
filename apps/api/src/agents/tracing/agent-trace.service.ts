@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
 const TRACE_SELECT = {
@@ -7,7 +8,6 @@ const TRACE_SELECT = {
   runId: true,
   status: true,
   grade: true,
-  feedback: true,
   evaluator: true,
   traceUrl: true,
   input: true,
@@ -33,12 +33,25 @@ export class AgentTraceService {
       .then((trace) => this.deserialize(trace))
   }
 
+  updateTraceInput(id: string, runId: string, input: unknown) {
+    return this.prisma.agentTrace
+      .update({
+        where: { id },
+        data: {
+          runId,
+          status: 'pending',
+          input: this.stringify(input)
+        },
+        select: TRACE_SELECT
+      })
+      .then((trace) => this.deserialize(trace))
+  }
+
   completeTrace(
     id: string,
     data: Partial<{
       status: string
       grade: number | null
-      feedback: string | null
       evaluator: string | null
       traceUrl: string | null
       output: unknown
@@ -47,7 +60,6 @@ export class AgentTraceService {
     const updateData = {
       status: data.status,
       grade: data.grade,
-      feedback: data.feedback,
       evaluator: data.evaluator,
       traceUrl: data.traceUrl,
       output: data.output !== undefined ? this.stringify(data.output) : undefined
@@ -60,6 +72,34 @@ export class AgentTraceService {
         select: TRACE_SELECT
       })
       .then((trace) => this.deserialize(trace))
+  }
+
+  async getTraceById(id: string) {
+    const trace = await this.prisma.agentTrace.findUnique({
+      where: { id },
+      select: TRACE_SELECT
+    })
+
+    return trace ? this.deserialize(trace) : null
+  }
+
+  async findTraceForAgent(agentId: string, identifier: { traceId?: string; runId?: string }) {
+    const where: Prisma.AgentTraceWhereInput = { agentId }
+
+    if (identifier.traceId) {
+      where.id = identifier.traceId
+    }
+
+    if (identifier.runId) {
+      where.runId = identifier.runId
+    }
+
+    const trace = await this.prisma.agentTrace.findFirst({
+      where,
+      select: TRACE_SELECT
+    })
+
+    return trace ? this.deserialize(trace) : null
   }
 
   listTracesForAgent(agentId: string, take = 20) {
@@ -112,7 +152,6 @@ type TraceRecord = {
   runId: string
   status: string
   grade: number | null
-  feedback: string | null
   evaluator: string | null
   traceUrl: string | null
   input: string | null

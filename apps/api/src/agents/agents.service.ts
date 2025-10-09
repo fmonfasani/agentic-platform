@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
-import { inferAgentType, AgentType } from './agent-type'
-import { PrismaService } from '../prisma/prisma.service'
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { inferAgentType, AgentType } from './agent-type';
+import { PrismaService } from '../prisma/prisma.service';
+
+type AgentCreateArgs = Parameters<PrismaService['agent']['create']>[0];
+
+type AgentCreateData = AgentCreateArgs extends { data: infer T }
+  ? T
+  : AgentCreateArgs;
 
 const AGENT_SUMMARY_SELECT = {
   id: true,
@@ -14,29 +19,24 @@ const AGENT_SUMMARY_SELECT = {
   votes: true,
   openaiAgentId: true,
   model: true,
-  instructions: true
-} as const
+  instructions: true,
+} as const;
 
 type AgentSummaryRow = {
-  id: string
-  name: string
-  area: string
-  uses: number
-  downloads: number
-  rewards: number
-  stars: number
-  votes: number
-  openaiAgentId: string | null
-  model: string | null
-  instructions: string | null
-}
+  id: string;
+  name: string;
+  area: string;
+  uses: number;
+  downloads: number;
+  rewards: number;
+  stars: number;
+  votes: number;
+  openaiAgentId: string | null;
+  model: string | null;
+  instructions: string | null;
+};
 
-type AgentSummary = AgentSummaryRow & { type: AgentType }
-
-const addAgentType = (agent: AgentSummaryRow): AgentSummary => ({
-  ...agent,
-  type: inferAgentType(agent.name)
-})
+type AgentSummaryWithType = AgentSummaryRow & { type: AgentType };
 
 @Injectable()
 export class AgentsService {
@@ -44,28 +44,28 @@ export class AgentsService {
 
   async findAll() {
     return this.prisma.agent.findMany({
-      include: { workflows: true, traces: true }
-    })
+      include: { workflows: true, traces: true },
+    });
   }
 
   async findOne(id: string) {
     return this.prisma.agent.findUnique({
       where: { id },
-      include: { workflows: true, traces: true }
-    })
+      include: { workflows: true, traces: true },
+    });
   }
 
-  async create(data: Prisma.AgentCreateInput) {
-    return this.prisma.agent.create({ data })
+  async create(data: AgentCreateData) {
+    return this.prisma.agent.create({ data });
   }
 
-  listAgents() {
-    return this.prisma.agent
-      .findMany({
-        select: AGENT_SUMMARY_SELECT,
-        orderBy: { name: 'asc' }
-      })
-      .then((agents) => agents.map(addAgentType))
+  async listAgents(): Promise<AgentSummaryWithType[]> {
+    const agents = await this.prisma.agent.findMany({
+      select: AGENT_SUMMARY_SELECT,
+      orderBy: { name: 'asc' },
+    });
+
+    return agents.map((agent) => ({ ...agent, type: inferAgentType(agent) }));
   }
 
   async getAgent(id: string) {
@@ -77,29 +77,28 @@ export class AgentsService {
         updatedAt: true,
         traces: {
           orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
-    })
+          take: 10,
+        },
+      },
+    });
 
     if (!agent) {
-      throw new NotFoundException('Agent not found')
+      throw new NotFoundException('Agent not found');
     }
 
-    return addAgentType(agent)
+    return { ...agent, type: inferAgentType(agent) };
   }
 
   async updateAgentAgentKitMetadata(
     id: string,
-    metadata: Partial<Pick<AgentSummary, 'openaiAgentId' | 'instructions' | 'model'>>
+    metadata: Partial<Pick<AgentSummaryRow, 'openaiAgentId' | 'instructions' | 'model'>>,
   ) {
     const agent = await this.prisma.agent.update({
       where: { id },
       data: metadata,
-      select: AGENT_SUMMARY_SELECT
-    })
+      select: AGENT_SUMMARY_SELECT,
+    });
 
-    return addAgentType(agent)
+    return agent;
   }
 }
-
