@@ -25,6 +25,23 @@ type ApiAgent = {
   rewards: number
   stars: number
   votes: number
+  openaiAgentId?: string | null
+  model?: string | null
+  instructions?: string | null
+  type?: AgentType
+}
+
+type AgentMetrics = AgentSummary & { type: AgentType }
+type GroupedAgents = Record<string, AgentMetrics[]>
+type AgentTrace = {
+  id: string
+  runId: string
+  status: string
+  grade: number | null
+  evaluator: string | null
+  traceUrl: string | null
+  createdAt: string
+  output?: { role: string; content: string }[] | null
 }
 
 export default function Page() {
@@ -40,20 +57,13 @@ export default function Page() {
     async function loadAgents() {
       setLoading(true)
       try {
-        const response = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!response.ok) throw new Error('No se pudieron obtener los agentes registrados')
-        const data = (await response.json()) as ApiAgent[]
-        const mapped = data.map<AgentSummary>((agent) => ({
-          id: agent.id,
-          name: agent.name,
-          area: agent.area,
-          description: agent.description ?? null,
-          type: normalizeCategory(agent.type ?? inferAgentType(agent.name)),
-          uses: agent.uses,
-          downloads: agent.downloads,
-          rewards: agent.rewards,
-          stars: agent.stars,
-          votes: agent.votes
+        const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
+
+        const data = (await res.json()) as AgentSummary[]
+        const enriched = data.map((agent) => ({
+          ...agent,
+          type: agent.type ?? inferAgentType(agent.name)
         }))
         setAgents(mapped)
         setError(null)
@@ -192,13 +202,11 @@ function normalizeCategory(type: string | null | undefined): AgentCategory {
 function inferAgentType(name: string): AgentCategory {
   const normalized = name.toLowerCase()
 
-  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
-  if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
-  if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
-  if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
-  if (normalized.includes('riesgo') || normalized.includes('auditor')) return 'risk'
-  if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
+  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) {
+      return type
+    }
+  }
 
-  // 👇 Agregar este return por defecto
-  return 'technical'
+  return 'general'
 }
