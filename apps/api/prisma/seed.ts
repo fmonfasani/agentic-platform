@@ -1,43 +1,57 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+const randomInt = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const randomStars = () => Number((Math.random() * 2 + 3).toFixed(1));
+
 async function main() {
   await prisma.agent.createMany({
     data: [
       {
         name: 'Analista Técnico',
-        description: 'Procesa informes técnicos',
-        area: 'Infraestructura y despliegues'
+        description:
+          'Especialista en diagnósticos de infraestructura y optimización de despliegues tecnológicos.',
+        area: 'Infraestructura y Operaciones',
+        uses: randomInt(150, 600),
+        downloads: randomInt(50, 200),
+        rewards: randomInt(5, 25),
+        stars: randomStars(),
+        votes: randomInt(10, 80)
       },
       {
-        name: 'Analista Financiero',
-        description: 'Evalúa datos contables y presupuestarios',
-        area: 'Presupuesto y contabilidad'
+        name: 'Analista Financiero y Contable',
+        description:
+          'Integra balances, presupuestos y proyecciones para apoyar la toma de decisiones financieras.',
+        area: 'Gestión Financiera y Contable',
+        uses: randomInt(120, 500),
+        downloads: randomInt(40, 180),
+        rewards: randomInt(5, 20),
+        stars: randomStars(),
+        votes: randomInt(8, 70)
       },
       {
-        name: 'Analista de Licencias',
-        description: 'Controla los permisos y autorizaciones',
-        area: 'Gestión de licencias'
-      },
-      {
-        name: 'Gestión Regulatoria',
-        description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
-        area: 'Gestión Regulatoria y Licencias',
-        uses: 58,
-        downloads: 24,
-        rewards: 6,
-        stars: 4.3,
-        votes: 42
+        name: 'Gestor Regulatorio',
+        description:
+          'Monitorea cambios normativos y prepara respuestas para garantizar el cumplimiento regulatorio.',
+        area: 'Cumplimiento Normativo',
+        uses: randomInt(90, 400),
+        downloads: randomInt(30, 150),
+        rewards: randomInt(3, 18),
+        stars: randomStars(),
+        votes: randomInt(5, 60)
       },
       {
         name: 'Reportes e Informes',
-        description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
-        area: 'Reportes e Informes Institucionales',
-        uses: 87,
-        downloads: 33,
-        rewards: 11,
-        stars: 4.6,
-        votes: 73
+        description:
+          'Automatiza la consolidación de KPIs y genera informes ejecutivos para distintos equipos.',
+        area: 'Inteligencia de Negocio',
+        uses: randomInt(110, 450),
+        downloads: randomInt(35, 160),
+        rewards: randomInt(4, 22),
+        stars: randomStars(),
+        votes: randomInt(7, 75)
       }
     ]
   });
