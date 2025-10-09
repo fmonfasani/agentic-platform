@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -48,11 +48,14 @@ export class AgentRunController {
   }
 
   @Get('traces')
-  async listTraces(@Param('id') id: string) {
+  async listTraces(@Param('id') id: string, @Query('take') take?: string) {
+    const parsed = take ? Number.parseInt(take, 10) : NaN;
+    const amount = Number.isNaN(parsed) ? 20 : parsed;
+
     const traces = await this.prisma.agentTrace.findMany({
       where: { agentId: id },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: amount,
     });
 
     return traces;
