@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { AgentRunnerService } from './agent-runner.service';
 
 @Controller('agents/:id')
@@ -6,6 +6,7 @@ export class AgentRunController {
   constructor(private readonly runnerService: AgentRunnerService) {}
 
   @Post('run')
+  @HttpCode(HttpStatus.CREATED)
   async runAgent(
     @Param('id') id: string,
     @Body() body: Parameters<AgentRunnerService['run']>[1]
