@@ -19,6 +19,11 @@ type ToolCall = {
   input: Record<string, unknown>
 }
 
+type RunAgentOptions = {
+  existingTraceId?: string
+  runId?: string
+}
+
 @Injectable()
 export class AgentRunnerService {
   private readonly logger = new Logger(AgentRunnerService.name)
@@ -45,7 +50,7 @@ export class AgentRunnerService {
     })
   }
 
-  async run(agentId: string, payload: RunAgentDto) {
+  async run(agentId: string, payload: RunAgentDto, options?: RunAgentOptions) {
     const client = this.ensureClient()
 
     const agent = await this.agentsService.getAgent(agentId)
@@ -53,8 +58,10 @@ export class AgentRunnerService {
     const openaiAgentId = await this.ensureAgentRegistration(agentId, agent)
 
     const inputMessages = this.normalizeMessages(payload, agent.instructions)
-    const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-    const trace = await this.traceService.createTrace(agentId, runId, inputMessages)
+    const runId = options?.runId ?? `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    const trace = options?.existingTraceId
+      ? await this.traceService.updateTraceInput(options.existingTraceId, runId, inputMessages)
+      : await this.traceService.createTrace(agentId, runId, inputMessages)
 
     const tools = this.buildToolDefinitions(agentId)
 

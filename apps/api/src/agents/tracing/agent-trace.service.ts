@@ -33,6 +33,20 @@ export class AgentTraceService {
       .then((trace) => this.deserialize(trace))
   }
 
+  updateTraceInput(id: string, runId: string, input: unknown) {
+    return this.prisma.agentTrace
+      .update({
+        where: { id },
+        data: {
+          runId,
+          status: 'pending',
+          input: this.stringify(input)
+        },
+        select: TRACE_SELECT
+      })
+      .then((trace) => this.deserialize(trace))
+  }
+
   completeTrace(
     id: string,
     data: Partial<{
