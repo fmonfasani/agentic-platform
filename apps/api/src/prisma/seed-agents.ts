@@ -52,7 +52,8 @@ const seedAgents: SeedAgent[] = [
 ];
 
 async function createOpenAIAgent(agent: SeedAgent): Promise<string> {
-  const response = await openai.agents.create({
+  const agentsApi = (openai as any).agents;
+  const response = await agentsApi.create({
     name: agent.name,
     model: 'gpt-4.1-mini',
     instructions: agent.instructions,
