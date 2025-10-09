@@ -4,3 +4,26 @@ node_modules
 .env*
 *.log
 apps/api/prisma/**/*.db
+# Build output
+dist/
+apps/api/dist/
+
+# Archivos temporales o locales
+*.log
+.env
+node_modules/
+
+# Build output
+dist/
+apps/api/dist/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+
+# Archivos temporales o locales
+*.log
+.env
+node_modules/
+
+

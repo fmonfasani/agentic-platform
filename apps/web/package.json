@@ -6,22 +6,26 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo"
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@agents-hub/ui": "workspace:*",
+    "@openai/chatkit": "^0.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.545.0",
     "next": "14.2.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "recharts": "^2.15.4",
     "tailwindcss": "^3.4.10"
   },
   "devDependencies": {
     "@types/node": "24.7.0",
     "@types/react": "19.2.2",
     "autoprefixer": "^10.4.20",
+    "@playwright/test": "^1.56.0",
     "postcss": "^8.4.41",
     "rimraf": "^5.0.5",
     "typescript": "^5.6.2"

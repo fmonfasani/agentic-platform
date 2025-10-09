@@ -1,34 +1,61 @@
-// Prisma schema for ENACOM agent metrics
+// ===================================================
+// Prisma Schema — platform_agents (by fmonfasani)
+// ===================================================
 
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
+// ===================================================
+// MODELS
+// ===================================================
+
 model Agent {
-  id          String      @id @default(uuid())
-  name        String
-  type        String
-  description String?
-  area        String?
-  uses        Int         @default(0)
-  downloads   Int         @default(0)
-  rewards     Int         @default(0)
-  stars       Float       @default(0)
-  votes       Int         @default(0)
-  updatedAt   DateTime    @updatedAt
-  usages      AgentUsage[]
+  id            String   @id @default(uuid())
+  name          String
+  area          String
+  description   String?
+  uses          Int      @default(0)
+  downloads     Int      @default(0)
+  rewards       Int      @default(0)
+  stars         Float    @default(0)
+  votes         Int      @default(0)
+  openaiAgentId String?
+  model         String?  @default("gpt-4.1-mini")
+  instructions  String?
+  updatedAt     DateTime @updatedAt
+
+  traces    AgentTrace[]
+  workflows Workflow[]
 }
 
-model AgentUsage {
+model AgentTrace {
   id        String   @id @default(uuid())
   agentId   String
-  action    String
-  value     Float?
+  runId     String
+  status    String
+  grade     Float?
+  evaluator String?
+  traceUrl  String?
+  input     String?
+  output    String?
   createdAt DateTime @default(now())
-  Agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model Workflow {
+  id        String   @id @default(uuid())
+  name      String
+  status    String   @default("ready")
+  model     String   @default("gpt-4o")
+  platform  String   @default("OpenAI")
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
