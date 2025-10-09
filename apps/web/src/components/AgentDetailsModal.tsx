@@ -302,7 +302,7 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
               {detail.instructions && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Instrucciones Base</p>
-                  <p className="mt-1 text-sm text-white/65 whitespace-pre-line">{detail.instructions}</p>
+                  <p className="mt-1 text-sm text-white/[0.65] whitespace-pre-line">{detail.instructions}</p>
                 </div>
               )}
             </article>
