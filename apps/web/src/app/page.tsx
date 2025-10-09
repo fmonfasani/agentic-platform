@@ -27,10 +27,6 @@ type AgentSummary = {
 
 type AgentMetrics = AgentSummary & { type: AgentType }
 type GroupedAgents = Record<string, AgentMetrics[]>
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 type AgentTrace = {
   id: string
   runId: string
@@ -42,12 +38,6 @@ type AgentTrace = {
   output?: { role: string; content: string }[] | null
 }
 
-<<<<<<< Updated upstream
-type AgentDetails = AgentMetrics & {
-  description?: string | null
-  updatedAt: string
-  traces?: AgentTrace[]
-=======
 type AgentDetail = {
   id: string
   name: string
@@ -68,7 +58,6 @@ type AgentDetail = {
     model: string
     platform: string
   }[]
->>>>>>> Stashed changes
 }
 
 // === Página principal ===
@@ -370,7 +359,6 @@ function TraceCard({ trace }: { trace: AgentTrace }) {
     </div>
   )
 }
-<<<<<<< Updated upstream
 
 const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentType }[] = [
   {
@@ -402,23 +390,11 @@ const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentType }[] = [
 function inferAgentType(name: string): AgentType {
   const normalized = name.toLowerCase()
 
-  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
-    if (keywords.some((keyword) => normalized.includes(keyword))) {
-      return type
-    }
-  }
-=======
-// === Helper para clasificar agentes por tipo ===
-function inferAgentType(name: string): AgentType {
-  const normalized = name.toLowerCase()
-
   if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
   if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
   if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
   if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
-  if (normalized.includes('riesgo') || normalized.includes('riesgos')) return 'risk'
-  if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
->>>>>>> Stashed changes
 
-  return 'general'
+  // 👇 Agregar este return por defecto
+  return 'technical'
 }
