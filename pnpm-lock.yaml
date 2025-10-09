@@ -8,12 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@types/pdf-parse':
-        specifier: ^1.1.5
-        version: 1.1.5
-      pdf-parse:
-        specifier: ^2.2.2
-        version: 2.2.2
       react:
         specifier: 18.3.1
         version: 18.3.1
