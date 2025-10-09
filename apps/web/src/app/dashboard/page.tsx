@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import { API_BASE_URL } from '../../lib/config'
+
 type AgentRanking = {
   id: string
   name: string
@@ -29,12 +31,13 @@ type LeaderboardResponse = {
 
 const DASHBOARD_BASE_URL =
   process.env.NEXT_PUBLIC_ENACOM_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/?api\/?$/, '') ??
-  ''
+  process.env.NEXT_PUBLIC_API_URL ??
+  process.env.NEXT_PUBLIC_API_ROOT ??
+  undefined
 
-const DASHBOARD_LEADERBOARD_ENDPOINT = DASHBOARD_BASE_URL
-  ? `${DASHBOARD_BASE_URL.replace(/\/$/, '')}/dashboard/leaderboard`
-  : '/dashboard/leaderboard'
+const DASHBOARD_API_ROOT = (DASHBOARD_BASE_URL ?? API_BASE_URL).replace(/\/$/, '')
+
+const DASHBOARD_LEADERBOARD_ENDPOINT = `${DASHBOARD_API_ROOT}/dashboard/leaderboard`
 
 export default function DashboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
