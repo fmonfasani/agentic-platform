@@ -6,6 +6,7 @@ import { Clock, Gauge, Link2, Loader2, Mic, Paperclip, Presentation, RotateCcw, 
 import AgentModal from './AgentModal'
 import { API_BASE_URL, OPENAI_CAPABILITIES } from '../lib/config'
 import type { AgentCardData } from './AgentCard'
+import { PdfUploadSummary } from './PdfUploadSummary'
 
 const capabilityPalette = ['bg-sky-500/20 text-sky-200', 'bg-emerald-500/20 text-emerald-200', 'bg-teal-500/20 text-teal-200', 'bg-violet-500/20 text-violet-200']
 
@@ -38,6 +39,7 @@ type AgentTrace = {
   evaluator?: string | null
   grade?: number | null
   summary?: string | null
+  output?: unknown
 }
 
 type ConversationMessage = {
@@ -359,6 +361,8 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
             </button>
           </header>
 
+          <PdfUploadSummary agentId={agent?.id ?? null} onCompleted={() => agent && fetchTraces(agent.id)} />
+
           <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
             {conversation.length === 0 && (
               <p className="text-sm text-white/50">
@@ -445,31 +449,77 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
           <section className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-white/60">Últimas ejecuciones</h3>
             <div className="grid gap-3">
-              {traces.map((trace) => (
-                <div key={trace.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
-                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                      {trace.status}
-                    </span>
-                    <span>{new Date(trace.createdAt).toLocaleString()}</span>
+              {traces.map((trace) => {
+                const summary = extractTraceSummary(trace)
+
+                return (
+                  <div key={trace.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
+                      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                        {trace.status}
+                      </span>
+                      <span>{new Date(trace.createdAt).toLocaleString()}</span>
+                    </div>
+                    {summary && <p className="mt-2 whitespace-pre-line text-white/70">{summary}</p>}
+                    <div className="mt-2 text-[11px] text-white/40">
+                      {trace.grade !== null && trace.grade !== undefined
+                        ? `Evaluación • ${(trace.grade * 100).toFixed(0)}%`
+                        : 'Sin evaluación automática registrada'}
+                    </div>
+                    {trace.evaluator && (
+                      <p className="text-[11px] text-white/40">Evaluador: {trace.evaluator}</p>
+                    )}
                   </div>
-                  {trace.summary && <p className="mt-2 text-white/70">{trace.summary}</p>}
-                  <div className="mt-2 text-[11px] text-white/40">
-                    {trace.grade !== null && trace.grade !== undefined
-                      ? `Evaluación • ${(trace.grade * 100).toFixed(0)}%`
-                      : 'Sin evaluación automática registrada'}
-                  </div>
-                  {trace.evaluator && (
-                    <p className="text-[11px] text-white/40">Evaluador: {trace.evaluator}</p>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}
       </div>
     </AgentModal>
   )
+}
+
+function extractTraceSummary(trace: AgentTrace) {
+  if (trace.summary) {
+    return trace.summary
+  }
+
+  const output = trace.output as any
+
+  if (!output) {
+    return null
+  }
+
+  if (typeof output === 'string') {
+    return output
+  }
+
+  if (Array.isArray(output)) {
+    return output
+      .map((item) => {
+        if (!item) return ''
+        if (typeof item === 'string') return item
+        if (typeof item === 'object' && 'content' in item && typeof item.content === 'string') {
+          return item.content
+        }
+        return ''
+      })
+      .filter((value) => value.trim().length > 0)
+      .join('\n')
+  }
+
+  if (typeof output === 'object') {
+    if (typeof (output as { summary?: string }).summary === 'string') {
+      return (output as { summary: string }).summary
+    }
+
+    if (typeof (output as { message?: string }).message === 'string') {
+      return (output as { message: string }).message
+    }
+  }
+
+  return null
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
