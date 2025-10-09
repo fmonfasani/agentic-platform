@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
 const TRACE_SELECT = {
@@ -71,6 +72,34 @@ export class AgentTraceService {
         select: TRACE_SELECT
       })
       .then((trace) => this.deserialize(trace))
+  }
+
+  async getTraceById(id: string) {
+    const trace = await this.prisma.agentTrace.findUnique({
+      where: { id },
+      select: TRACE_SELECT
+    })
+
+    return trace ? this.deserialize(trace) : null
+  }
+
+  async findTraceForAgent(agentId: string, identifier: { traceId?: string; runId?: string }) {
+    const where: Prisma.AgentTraceWhereInput = { agentId }
+
+    if (identifier.traceId) {
+      where.id = identifier.traceId
+    }
+
+    if (identifier.runId) {
+      where.runId = identifier.runId
+    }
+
+    const trace = await this.prisma.agentTrace.findFirst({
+      where,
+      select: TRACE_SELECT
+    })
+
+    return trace ? this.deserialize(trace) : null
   }
 
   listTracesForAgent(agentId: string, take = 20) {

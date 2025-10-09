@@ -1,7 +1,16 @@
-import { Controller, HttpStatus, Param, Post, UploadedFile, UseInterceptors, ParseFilePipeBuilder } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
-import multer from 'multer'
-import { AgentUploadService } from './agent-upload.service'
+import {
+  Controller,
+  HttpStatus,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipeBuilder,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import multer from 'multer';
+import { AgentUploadService } from './agent-upload.service';
+import type { Express } from 'express';
 
 @Controller('agents/:id')
 export class AgentUploadController {
@@ -10,8 +19,8 @@ export class AgentUploadController {
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: multer.memoryStorage()
-    })
+      storage: multer.memoryStorage(),
+    }),
   )
   uploadFinancialReport(
     @Param('id') agentId: string,
@@ -19,10 +28,10 @@ export class AgentUploadController {
       new ParseFilePipeBuilder()
         .addFileTypeValidator({ fileType: /pdf$/i })
         .addMaxSizeValidator({ maxSize: 10 * 1024 * 1024 })
-        .build({ errorHttpStatusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE })
+        .build({ errorHttpStatusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE }),
     )
-    file: Express.Multer.File
+    file: Express.Multer.File,
   ) {
-    return this.uploadService.processFinancialReport(agentId, file)
+    return this.uploadService.processFinancialReport(agentId, file);
   }
 }
