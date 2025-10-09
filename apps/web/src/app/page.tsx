@@ -204,7 +204,7 @@ function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
     if (!agent) return
     setBusy(true)
     try {
-      const res = await fetch(`/api/agents/${agent.id}/run`, {
+      const res = await fetch(`/api/agents/${agent.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input, action })
