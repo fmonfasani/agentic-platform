@@ -6,7 +6,6 @@ type SeedAgent = {
   name: string;
   area: string;
   description: string;
-  type: string;
   instructions: string;
 };
 
@@ -18,35 +17,30 @@ const seedAgents: SeedAgent[] = [
     name: 'Analista Técnico',
     area: 'Infraestructura y Radiocomunicaciones',
     description: 'Evalúa la performance de redes, espectro y equipos.',
-    type: 'technical',
     instructions: 'Analiza logs técnicos, evalúa rendimiento y genera reportes automatizados.',
   },
   {
     name: 'Analista Financiero',
     area: 'Gestión Presupuestaria',
     description: 'Evalúa gastos, presupuestos y KPIs financieros del ENACOM.',
-    type: 'financial',
     instructions: 'Genera reportes de gastos trimestrales y evalúa desviaciones presupuestarias.',
   },
   {
     name: 'Analista Regulatorio',
     area: 'Gestión de Licencias y Autorizaciones',
     description: 'Asiste en procesos de licencias, normativas y compliance.',
-    type: 'regulatory',
     instructions: 'Evalúa cumplimiento normativo y genera resúmenes de regulaciones TIC.',
   },
   {
     name: 'Analista Estratégico',
     area: 'Planeamiento y Regulación',
     description: 'Genera informes estratégicos para decisiones institucionales.',
-    type: 'strategic',
     instructions: 'Integra datos técnicos y financieros para generar reportes ejecutivos.',
   },
   {
     name: 'Reporte Institucional',
     area: 'Dirección Nacional de Servicios TIC',
     description: 'Produce informes automatizados de resultados institucionales.',
-    type: 'reporting',
     instructions: 'Genera reportes y visualizaciones de alto nivel basados en datos internos.',
   },
 ];
@@ -58,7 +52,6 @@ async function createOpenAIAgent(agent: SeedAgent): Promise<string> {
     model: 'gpt-4.1-mini',
     instructions: agent.instructions,
     metadata: {
-      type: agent.type,
       area: agent.area,
       origin: 'ENACOM Platform',
     },
@@ -85,7 +78,6 @@ async function seed() {
           name: agent.name,
           area: agent.area,
           description: agent.description,
-          type: agent.type,
           openaiAgentId,
           instructions: agent.instructions,
           uses: Math.floor(Math.random() * 250),
