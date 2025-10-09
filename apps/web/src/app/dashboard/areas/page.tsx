@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../../../lib/config'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 type AreaMetrics = {
@@ -16,19 +17,32 @@ type AreaMetrics = {
 export default function AreasDashboardPage() {
   const [data, setData] = useState<AreaMetrics[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
-      const res = await fetch('http://localhost:3001/dashboard/areas')
-      const json = await res.json()
-      setData(json)
-      setLoading(false)
+      try {
+        const res = await fetch(`${API_BASE_URL}/dashboard/areas`, { cache: 'no-store' })
+        if (!res.ok) {
+          throw new Error('No se pudieron cargar las métricas por área')
+        }
+
+        const json = (await res.json()) as AreaMetrics[]
+        setData(json)
+        setError(null)
+      } catch (err) {
+        console.error('Error loading area metrics', err)
+        setError('No se pudieron cargar las métricas por área')
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
   }, [])
 
   if (loading) return <div className="text-white/70 p-6">Cargando métricas por área...</div>
+  if (error) return <div className="text-red-400 p-6">{error}</div>
 
   return (
     <div className="p-8">
