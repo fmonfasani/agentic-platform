@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "jest --config jest.config.ts",
-    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo"
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@agents-hub/ui": "workspace:*",
@@ -25,6 +25,7 @@
     "@types/node": "24.7.0",
     "@types/react": "19.2.2",
     "autoprefixer": "^10.4.20",
+    "@playwright/test": "^1.56.0",
     "postcss": "^8.4.41",
     "rimraf": "^5.0.5",
     "typescript": "^5.6.2"
