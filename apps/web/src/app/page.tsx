@@ -58,10 +58,11 @@ export default function Page() {
         const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
         if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
 
-        const data = (await res.json()) as AgentSummary[]
-        const enriched = data.map((agent) => ({
+        const data = (await res.json()) as ApiAgent[]
+        const enriched: AgentSummary[] = data.map((agent) => ({
           ...agent,
-          type: (agent.type as AgentCategory) ?? inferAgentType(agent.name)
+          description: agent.description ?? null,
+          type: normalizeCategory(agent.type)
         }))
         setAgents(enriched)
         setError(null)
