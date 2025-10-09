@@ -1,38 +1,63 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-const prisma = new PrismaClient()
+const randomInt = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const randomStars = () => Number((Math.random() * 2 + 3).toFixed(1));
 
 async function main() {
-  const agents = [
-    { name: 'Analista Técnico', type: 'Analyst', area: 'Infraestructura y Radiocomunicaciones' },
-    { name: 'Analista Financiero', type: 'Analyst', area: 'Gestión Presupuestaria' },
-    { name: 'Analista Contable', type: 'Analyst', area: 'Contabilidad y Tesorería' },
-    { name: 'Analista de Licencias', type: 'Analyst', area: 'Gestión de Licencias y Autorizaciones' },
-    { name: 'Analista de Mercado', type: 'Analyst', area: 'Economía y Competencia' },
-    { name: 'Analista de Riesgo', type: 'Analyst', area: 'Auditoría Interna' },
-    { name: 'Analista de Datos', type: 'Analyst', area: 'Tecnologías de la Información' },
-    { name: 'Analista Estratégico', type: 'Analyst', area: 'Planeamiento y Regulación' },
-    { name: 'Generador de Informes', type: 'Report', area: 'Dirección General' },
-    { name: 'Reporte de Análisis Técnico', type: 'Report', area: 'Laboratorio y Control Técnico' },
-    { name: 'Reporte de Auditoría', type: 'Report', area: 'Auditoría y Control de Gestión' },
-    { name: 'Reporte Económico', type: 'Report', area: 'Economía y Tarifas' },
-    { name: 'Reporte de Licencias', type: 'Report', area: 'Dirección Nacional de Servicios TIC' },
-    { name: 'Informe Ejecutivo', type: 'Report', area: 'Presidencia del ENACOM' },
-    { name: 'Informe Trimestral', type: 'Report', area: 'Planeamiento Institucional' }
-  ]
-
-  for (const a of agents) {
-    await prisma.agent.create({
-      data: {
-        ...a,
-        uses: Math.floor(Math.random() * 400),
-        downloads: Math.floor(Math.random() * 150),
-        rewards: Math.floor(Math.random() * 25),
-        stars: parseFloat((3.5 + Math.random() * 1.5).toFixed(1)),
-        votes: Math.floor(Math.random() * 80)
+  await prisma.agent.createMany({
+    data: [
+      {
+        name: 'Analista Técnico',
+        description:
+          'Especialista en diagnósticos de infraestructura y optimización de despliegues tecnológicos.',
+        area: 'Infraestructura y Operaciones',
+        uses: randomInt(150, 600),
+        downloads: randomInt(50, 200),
+        rewards: randomInt(5, 25),
+        stars: randomStars(),
+        votes: randomInt(10, 80)
+      },
+      {
+        name: 'Analista Financiero y Contable',
+        description:
+          'Integra balances, presupuestos y proyecciones para apoyar la toma de decisiones financieras.',
+        area: 'Gestión Financiera y Contable',
+        uses: randomInt(120, 500),
+        downloads: randomInt(40, 180),
+        rewards: randomInt(5, 20),
+        stars: randomStars(),
+        votes: randomInt(8, 70)
+      },
+      {
+        name: 'Gestión Regulatoria',
+        type: 'regulatory',
+        description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
+        area: 'Gestión Regulatoria y Licencias',
+        uses: 58,
+        downloads: 24,
+        rewards: 6,
+        stars: 4.3,
+        votes: 42
+      },
+      {
+        name: 'Reportes e Informes',
+        type: 'reporting',
+        description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
+        area: 'Reportes e Informes Institucionales',
+        uses: 87,
+        downloads: 33,
+        rewards: 11,
+        stars: 4.6,
+        votes: 73
       }
-    })
-  }
+    ]
+  });
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main()
+  .then(() => console.log('Seed completo ✅'))
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

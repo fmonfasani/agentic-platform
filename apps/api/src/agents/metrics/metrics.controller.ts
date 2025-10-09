@@ -5,28 +5,28 @@ import { MetricsService } from './metrics.service'
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
+  @Get('metrics')
+  getMetrics(@Param('id') id: string) {
+    return this.metricsService.getMetrics(id)
+  }
+
   @Post('use')
-  use(@Param('id') id: string) {
+  incrementUses(@Param('id') id: string) {
     return this.metricsService.increment(id, 'uses')
   }
 
   @Post('download')
-  download(@Param('id') id: string) {
+  incrementDownloads(@Param('id') id: string) {
     return this.metricsService.increment(id, 'downloads')
   }
 
   @Post('reward')
-  reward(@Param('id') id: string) {
+  incrementRewards(@Param('id') id: string) {
     return this.metricsService.increment(id, 'rewards')
   }
 
   @Post('rate')
-  rate(@Param('id') id: string, @Body() body: { stars: number }) {
-    return this.metricsService.rate(id, body.stars)
-  }
-
-  @Get('metrics')
-  metrics(@Param('id') id: string) {
-    return this.metricsService.getMetrics(id)
+  rateAgent(@Param('id') id: string, @Body() body: { stars?: number }) {
+    return this.metricsService.rate(id, body?.stars ?? 0)
   }
 }

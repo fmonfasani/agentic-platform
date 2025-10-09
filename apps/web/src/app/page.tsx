@@ -1,45 +1,74 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AgentCard } from '@agents-hub/ui'
+import { AgentCard, type AgentCardData } from '../components/AgentCard'
+import { AgentDetailsModal } from '../components/AgentDetailsModal'
 import { agentGroups, orderedAgentTypes } from '../lib/agents-data'
-import { SectionTitle } from '../lib/ui'
-import AgentModal from '../components/AgentModal'
+import { API_BASE_URL } from '../lib/config'
 
-type AgentMetrics = {
+type AgentCategory = keyof typeof agentGroups
+
+const orderedColumns: AgentCategory[] = orderedAgentTypes
+
+type AgentSummary = AgentCardData & {
+  description: string | null
+  type?: AgentCategory
+}
+
+type ApiAgent = {
   id: string
   name: string
-  type: keyof typeof agentGroups
-  area?: string | null
+  area: string
+  description?: string | null
+  type?: string | null
   uses: number
   downloads: number
   rewards: number
   stars: number
   votes: number
+  openaiAgentId?: string | null
+  model?: string | null
+  instructions?: string | null
 }
 
-type GroupedAgents = Record<string, AgentMetrics[]>
+type AgentTrace = {
+  id: string
+  runId: string
+  status: string
+  grade: number | null
+  evaluator: string | null
+  traceUrl: string | null
+  createdAt: string
+  output?: { role: string; content: string }[] | null
+}
 
 export default function Page() {
-  const [agents, setAgents] = useState<AgentMetrics[]>([])
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [agents, setAgents] = useState<AgentSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<AgentCategory | 'all'>('all')
+  const [sortKey, setSortKey] = useState<'stars' | 'uses'>('stars')
+  const [selectedAgent, setSelectedAgent] = useState<AgentSummary | null>(null)
 
   useEffect(() => {
     async function loadAgents() {
       setLoading(true)
       try {
-        const res = await fetch('/api/agents', { cache: 'no-store' })
-        if (!res.ok) {
-          throw new Error('No se pudieron obtener los agentes del ENACOM')
-        }
-        const data = (await res.json()) as AgentMetrics[]
-        setAgents(data)
+        const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes')
+
+        const data = (await res.json()) as ApiAgent[]
+        const enriched: AgentSummary[] = data.map((agent) => ({
+          ...agent,
+          description: agent.description ?? null,
+          type: normalizeCategory(agent.type)
+        }))
+        setAgents(enriched)
         setError(null)
       } catch (err) {
         console.error(err)
-        setError(err instanceof Error ? err.message : 'Ocurrió un error al cargar los agentes')
+        setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado al cargar los agentes')
       } finally {
         setLoading(false)
       }
@@ -48,177 +77,139 @@ export default function Page() {
     loadAgents()
   }, [])
 
-  const grouped = useMemo<GroupedAgents>(() => {
-    return agents.reduce<GroupedAgents>((acc, agent) => {
-      if (!acc[agent.type]) {
-        acc[agent.type] = []
-      }
-      acc[agent.type].push(agent)
-      return acc
-    }, {})
-  }, [agents])
+  const filteredAgents = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase()
+    const list = agents.filter((agent) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        agent.name.toLowerCase().includes(normalizedSearch) ||
+        agent.area.toLowerCase().includes(normalizedSearch)
+      const matchesFilter = filter === 'all' || agent.type === filter
+      return matchesSearch && matchesFilter
+    })
 
-  const selectedAgent = useMemo(() => agents.find((agent) => agent.id === openId) ?? null, [agents, openId])
+    return [...list].sort((a, b) => {
+      if (sortKey === 'stars') return b.stars - a.stars
+      return b.uses - a.uses
+    })
+  }, [agents, filter, search, sortKey])
+
+  const groupedByCategory = useMemo(() => {
+    const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
+      acc[category] = []
+      return acc
+    }, {} as Record<AgentCategory, AgentSummary[]>)
+
+    return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
+      const category = normalizeCategory(agent.type)
+      if (!acc[category]) acc[category] = []
+      acc[category].push(agent)
+      return acc
+    }, emptyGroups)
+  }, [filteredAgents])
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold text-white/90">Panel de Control ENACOM</h1>
-      <p className="text-white/60 mt-1">
-        Monitoree el uso de los agentes analíticos, informes y reportes estratégicos del Ente Nacional de Comunicaciones.
-      </p>
+    <main className="min-h-screen bg-[#050b15] px-6 pb-16 pt-12 text-white">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-950/40 p-8 shadow-2xl">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/70">Sistema de Agentes Autónomos</p>
+            <h1 className="text-3xl font-semibold text-white/90">Dashboard de Agentes</h1>
+            <p className="text-sm text-white/60">
+              Monitor de agentes.
+            </p>
+          </div>
 
-      {error && (
-        <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error}
-        </div>
-      )}
+          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
+            <input
+              type="search"
+              placeholder="Buscar agente…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/60 focus:outline-none"
+            />
+            <select
+              value={filter}
+              onChange={(event) => setFilter(event.target.value as AgentCategory | 'all')}
+              className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 focus:border-emerald-400/60 focus:outline-none"
+            >
+              <option value="all">Todas las categorías</option>
+              {orderedColumns.map((key) => (
+                <option key={key} value={key}>
+                  {agentGroups[key].title}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as 'stars' | 'uses')}
+              className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 focus:border-emerald-400/60 focus:outline-none"
+            >
+              <option value="stars">Ordenar por puntuación</option>
+              <option value="uses">Ordenar por usos</option>
+            </select>
+          </div>
+        </header>
 
-      {loading ? (
-        <div className="mt-10 text-white/70">Cargando información de los agentes...</div>
-      ) : (
-        <section className="container-card mt-8">
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {orderedAgentTypes.map((type) => {
-              const metadata = agentGroups[type]
-              const agentsForType = grouped[type] ?? []
+        {error && (
+          <div className="mt-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>
+        )}
 
-              if (agentsForType.length === 0) {
-                return null
-              }
-
+        {loading ? (
+          <div className="mt-16 flex items-center justify-center text-white/60">Cargando información de agentes…</div>
+        ) : (
+          <section className="mt-10 grid gap-6 xl:grid-cols-4">
+            {orderedColumns.map((category) => {
+              const meta = agentGroups[category]
+              const agentsForCategory = groupedByCategory[category] ?? []
               return (
-                <div key={type} className="space-y-3">
-                  <SectionTitle>{metadata.title}</SectionTitle>
-                  <p className="text-xs text-white/50">{metadata.description}</p>
+                <div key={category} className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-950/40 p-6">
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/60">{meta.title}</p>
+                    <p className="text-sm text-white/50">{meta.description}</p>
+                  </div>
                   <div className="space-y-3">
-                    {agentsForType.map((agent) => (
-                      <AgentCard key={agent.id} agent={agent} onOpen={() => setOpenId(agent.id)} />
-                    ))}
+                    {agentsForCategory.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/50">
+                        No hay agentes registrados en esta categoría.
+                      </p>
+                    ) : (
+                      agentsForCategory.map((agent) => (
+                        <AgentCard key={agent.id} agent={agent} onDoubleClick={() => setSelectedAgent(agent)} />
+                      ))
+                    )}
                   </div>
                 </div>
               )
             })}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </div>
 
-      <AgentWorkflowModal agent={selectedAgent} onClose={() => setOpenId(null)} />
-    </div>
+      <AgentDetailsModal agent={selectedAgent} open={!!selectedAgent} onClose={() => setSelectedAgent(null)} />
+    </main>
   )
 }
 
-type WorkflowModalProps = {
-  agent: AgentMetrics | null
-  onClose: () => void
+function normalizeCategory(type: string | null | undefined): AgentCategory {
+  if (!type) return 'technical'
+  if (type in agentGroups) return type as AgentCategory
+  return inferAgentType(type)
 }
 
-function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
-  const [input, setInput] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [log, setLog] = useState<string[]>([
-    'Necesito generar un análisis detallado del último trimestre',
-    'Entendido. Iniciando proceso de análisis. Por favor, especifique los parámetros requeridos o adjunte los archivos necesarios.'
-  ])
+function inferAgentType(name: string): AgentCategory {
+  const normalized = name.toLowerCase()
 
-  useEffect(() => {
-    if (agent) {
-      setLog([
-        `Se abrió el agente ${agent.name} (${agent.area ?? 'sin área asignada'})`,
-        'Indique las instrucciones para ejecutar un nuevo flujo de trabajo.'
-      ])
-      setInput('')
-    }
-  }, [agent?.id])
+  const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentCategory }[] = [
+    { keywords: ['financ', 'contab'], type: 'financial' },
+    { keywords: ['tecnic', 'infra'], type: 'technical' },
+    { keywords: ['reglament', 'licenc'], type: 'regulatory' },
+    { keywords: ['report', 'informe'], type: 'reporting' }
+  ]
 
-  async function run(action: string) {
-    if (!agent) return
-    setBusy(true)
-    try {
-      const res = await fetch(`/api/agents/${agent.id}/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, action })
-      })
-
-      if (!res.ok) {
-        throw new Error('No se pudo ejecutar el flujo del agente')
-      }
-
-      const data = await res.json()
-      setLog((history) => [...history, `▶ ${action}`, `✔ ${data.status} · ${data.runId}`])
-    } catch (err) {
-      console.error(err)
-      const message = err instanceof Error ? err.message : 'Error inesperado al ejecutar el flujo'
-      setLog((history) => [...history, `⚠️ ${message}`])
-    } finally {
-      setBusy(false)
-    }
+  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) return type
   }
 
-  return (
-    <AgentModal open={!!agent} onClose={onClose}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white/90">{agent?.name ?? 'Agente ENACOM'}</h2>
-            {agent?.area && <p className="text-xs text-white/60">{agent.area}</p>}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {[
-            'Análisis Avanzado',
-            'Procesamiento de Datos',
-            'Visualización',
-            'Automatización',
-            'Generación de Reportes',
-            'Integración API'
-          ].map((c) => (
-            <span key={c} className="px-3 py-1 text-sm bg-[#1c2736] rounded-lg border border-white/10">
-              {c}
-            </span>
-          ))}
-        </div>
-
-        <div className="rounded-xl bg-[#101b29] border border-white/10 p-4 space-y-3 text-sm text-white/80">
-          {log.map((message, index) => (
-            <div
-              key={index}
-              className={`rounded-md px-3 py-2 ${
-                index === 0 ? 'bg-green-500/10 text-white/90' : 'bg-white/15 text-white/80'
-              }`}
-            >
-              {message}
-            </div>
-          ))}
-          <textarea
-            className="w-full h-24 rounded-xl bg-[#0b131f] border border-white/10 p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#16a34a]"
-            placeholder="Ingrese su consulta o instrucciones..."
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            {['Archivo', 'Entrada de Voz', 'Video', 'Enlace'].map((label) => (
-              <button
-                key={label}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 bg-[#16202f] hover:bg-[#1f2d3f] transition"
-              >
-                Adjuntar {label}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={busy}
-            onClick={() => run('Ejecutar Proceso')}
-            className="bg-[#16a34a] hover:bg-[#15803d] px-5 py-2 rounded-lg font-semibold text-sm text-white transition"
-          >
-            ▶ Ejecutar Proceso
-          </button>
-        </div>
-      </div>
-    </AgentModal>
-  )
+  return 'technical'
 }
