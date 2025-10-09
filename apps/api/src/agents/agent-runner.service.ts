@@ -55,8 +55,9 @@ export class AgentRunnerService {
     const traceWithEvaluation = evaluation
       ? {
           ...finalTrace,
-          grade: evaluation.grade ?? finalTrace.grade,
-          evaluator: 'auto-eval'
+          grade: evaluation.grade,
+          feedback: evaluation.feedback,
+          evaluator: evaluation.evaluator
         }
       : finalTrace
 
