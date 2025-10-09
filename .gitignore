@@ -17,6 +17,10 @@ node_modules/
 dist/
 apps/api/dist/
 
+# Playwright artifacts
+playwright-report/
+test-results/
+
 # Archivos temporales o locales
 *.log
 .env
