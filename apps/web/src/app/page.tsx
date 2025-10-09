@@ -88,6 +88,11 @@ export default function Page() {
   }, [agents, filter, search, sortKey])
 
   const groupedByCategory = useMemo(() => {
+    const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
+      acc[category] = []
+      return acc
+    }, {} as Record<AgentCategory, AgentSummary[]>)
+
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
       if (!acc[category]) {
@@ -95,7 +100,7 @@ export default function Page() {
       }
       acc[category].push(agent)
       return acc
-    }, { technical: [], financial: [], regulatory: [], reporting: [], risk: [], planning: [], general: [] } as Record<AgentCategory, AgentSummary[]>)
+    }, emptyGroups)
   }, [filteredAgents])
 
   return (
