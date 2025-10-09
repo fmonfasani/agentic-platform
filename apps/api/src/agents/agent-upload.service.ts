@@ -1,56 +1,56 @@
 import {
   BadRequestException,
   Injectable,
-  UnsupportedMediaTypeException
-} from '@nestjs/common'
-import type { Express } from 'express'
-import { pdf as parsePdf } from 'pdf-parse'
-import { AgentRunnerService } from './agent-runner.service'
-import { AgentTraceService } from './tracing/agent-trace.service'
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
+import type { Express } from 'express';
+import { pdf as parsePdf } from 'pdf-parse';
+import { AgentRunnerService } from './agent-runner.service';
+import { AgentTraceService } from './tracing/agent-trace.service';
 
-export type AgentUploadFile = Express.Multer.File
+export type AgentUploadFile = Express.Multer.File;
 
 @Injectable()
 export class AgentUploadService {
   constructor(
     private readonly runnerService: AgentRunnerService,
-    private readonly traceService: AgentTraceService
+    private readonly traceService: AgentTraceService,
   ) {}
 
   processFinancialReport(agentId: string, file: AgentUploadFile) {
-    return this.handleUpload(agentId, file)
+    return this.handleUpload(agentId, file);
   }
 
   async handleUpload(agentId: string, file?: AgentUploadFile) {
     if (!file) {
-      throw new BadRequestException('No file was uploaded.')
+      throw new BadRequestException('No file was uploaded.');
     }
 
     if (!file.mimetype?.includes('pdf')) {
-      throw new UnsupportedMediaTypeException('Only PDF files are currently supported.')
+      throw new UnsupportedMediaTypeException('Only PDF files are currently supported.');
     }
 
-    let parsed
+    let parsed;
     try {
-      parsed = await parsePdf(file.buffer)
+      parsed = await parsePdf(file.buffer);
     } catch (error) {
-      throw new BadRequestException('Failed to process the uploaded PDF file.')
+      throw new BadRequestException('Failed to process the uploaded PDF file.');
     }
-    const extractedText = parsed.text?.trim()
+    const extractedText = parsed.text?.trim();
 
     if (!extractedText) {
-      throw new BadRequestException('The uploaded PDF did not contain extractable text.')
+      throw new BadRequestException('The uploaded PDF did not contain extractable text.');
     }
 
-    const runId = this.generateRunId()
+    const runId = this.generateRunId();
 
     const trace = await this.traceService.createTrace(agentId, runId, {
       source: 'file-upload',
       filename: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
-      uploadedAt: new Date().toISOString()
-    })
+      uploadedAt: new Date().toISOString(),
+    });
 
     return this.runnerService.run(
       agentId,
@@ -61,14 +61,14 @@ export class AgentUploadService {
           filename: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          traceId: trace.id
-        }
+          traceId: trace.id,
+        },
       },
-      { existingTraceId: trace.id, runId }
-    )
+      { existingTraceId: trace.id, runId },
+    );
   }
 
   private generateRunId() {
-    return `upload_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    return `upload_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   }
 }
