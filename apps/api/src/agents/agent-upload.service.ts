@@ -1,12 +1,11 @@
 import {
   BadRequestException,
   Injectable,
-  UnsupportedMediaTypeException,
-} from '@nestjs/common';
-import type { Express } from 'express';
-import { pdf as parsePdf } from 'pdf-parse';
-import { AgentRunnerService } from './agent-runner.service';
-import { AgentTraceService } from './tracing/agent-trace.service';
+  UnsupportedMediaTypeException
+} from '@nestjs/common'
+import parsePdf from 'pdf-parse'
+import { AgentRunnerService } from './agent-runner.service'
+import { AgentTraceService } from './tracing/agent-trace.service'
 
 export type AgentUploadFile = Express.Multer.File;
 
