@@ -29,12 +29,14 @@ La integración permite:
    | `NEXT_PUBLIC_ENACOM_API_URL` | URL del backend NestJS (p. ej. `http://localhost:3001`). |
    | `NEXT_PUBLIC_CHATKIT_CDN` | (Opcional) CDN de ChatKit embebido. |
 
-3. **Instalar dependencias**
+3. **Instalar dependencias y preparar la base de datos**
 
    ```bash
    pnpm install
-   pnpm prisma migrate deploy --filter api
+   pnpm -C apps/api seed
    ```
+
+   El script `seed` ejecuta `prisma db push` y `prisma db seed` para actualizar el esquema y cargar datos iniciales. Consultá [`reports/backend-day1-summary.md`](reports/backend-day1-summary.md) para más detalles.
 
 4. **Levantar los servicios**
 
@@ -46,7 +48,15 @@ La integración permite:
    pnpm --filter web dev
    ```
 
-5. **Accesos y permisos**
+5. **Validar el backend (opcional pero recomendado)**
+
+   ```bash
+   pnpm -C apps/api test:report
+   ```
+
+   El resultado de la suite se guarda en [`reports/tests-day1.md`](reports/tests-day1.md).
+
+6. **Accesos y permisos**
 
    - La API key debe tener habilitado Agent Builder/AgentKit y evaluaciones.
    - Configurá CORS en el backend para el dominio del frontend (ya habilitado por defecto para `localhost`).
@@ -91,3 +101,17 @@ La integración permite:
   ```
 
 - El script `apps/api/prisma/seed.ts` crea agentes con métricas iniciales para la demo del dashboard.
+
+## Diagnósticos automatizados
+
+El repositorio incluye un script que consolida los chequeos técnicos más relevantes (build del backend y tests globales) y los vuelca en Markdown o JSON. Podés ejecutarlo manualmente o desde CI:
+
+```bash
+# Salida en Markdown (por defecto)
+pnpm exec tsx scripts/agent-diagnostics.ts
+
+# Salida estructurada en JSON
+pnpm exec tsx scripts/agent-diagnostics.ts --json
+```
+
+Los reportes generados se imprimen por STDOUT. Si necesitás guardarlos en disco, redirigí la salida (`> reports/archivo.md`).

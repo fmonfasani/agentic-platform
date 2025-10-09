@@ -5,11 +5,13 @@ const config: Config = {
   rootDir: __dirname,
   testEnvironment: 'node',
   testRegex: '.e2e-spec.ts$',
+  setupFiles: ['<rootDir>/test/jest.setup.ts'],
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',
       {
         tsconfig: '<rootDir>/tsconfig.jest.json',
+        diagnostics: false
       },
     ],
   },
