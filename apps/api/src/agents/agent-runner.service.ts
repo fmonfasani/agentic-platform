@@ -78,8 +78,7 @@ export class AgentRunnerService {
     const traceWithEvaluation = evaluation
       ? {
           ...finalTrace,
-          grade: evaluation.grade,
-          feedback: evaluation.feedback,
+          grade: evaluation.grade ?? finalTrace.grade,
           evaluator: 'auto-eval'
         }
       : finalTrace
@@ -152,7 +151,6 @@ Responde siempre en español y utiliza las herramientas disponibles cuando corre
       instructions,
       metadata: {
         agentId,
-        type: agent.type,
         area: agent.area ?? undefined
       }
     })
