@@ -1,11 +1,4 @@
-export type AgentType =
-  | 'technical'
-  | 'financial'
-  | 'regulatory'
-  | 'reporting'
-  | 'risk'
-  | 'planning'
-  | 'general'
+export type AgentType = 'technical' | 'financial' | 'regulatory' | 'reporting'
 
 export const agentGroups: Record<AgentType, { title: string; description: string }> = {
   technical: {
@@ -27,21 +20,6 @@ export const agentGroups: Record<AgentType, { title: string; description: string
     title: 'Reportes e Informes Institucionales',
     description:
       'Documentos ejecutivos y tableros que consolidan hallazgos regulatorios, técnicos y financieros para la gestión pública.'
-  },
-  risk: {
-    title: 'Gestión de Riesgos y Control',
-    description:
-      'Herramientas que monitorean riesgos operativos, alertas tempranas y mecanismos de control interno del ENACOM.'
-  },
-  planning: {
-    title: 'Planificación y Proyectos Estratégicos',
-    description:
-      'Agentes que coordinan la planificación, seguimiento de proyectos y evaluación de impacto de las iniciativas institucionales.'
-  },
-  general: {
-    title: 'Agentes Institucionales Generales',
-    description:
-      'Asistentes transversales que brindan soporte integral para diversas áreas y necesidades del organismo.'
   }
 }
 
@@ -49,8 +27,5 @@ export const orderedAgentTypes: AgentType[] = [
   'technical',
   'financial',
   'regulatory',
-  'reporting',
-  'risk',
-  'planning',
-  'general'
+  'reporting'
 ]
