@@ -199,5 +199,6 @@ function inferAgentType(name: string): AgentCategory {
   if (normalized.includes('riesgo') || normalized.includes('auditor')) return 'risk'
   if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
 
-  return 'general'
+  // 👇 Agregar este return por defecto
+  return 'technical'
 }
