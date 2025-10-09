@@ -165,12 +165,14 @@ async function main() {
   const output = shouldOutputJson ? renderJson(results) : renderMarkdown(results);
   process.stdout.write(output);
 
-  if (results.some((result) => result.status !== 'passed')) {
+  const hasFailures = results.some((result) => result.status !== 'passed');
+  if (hasFailures) {
+    console.error('One or more diagnostics checks did not pass.');
     process.exitCode = 1;
   }
 }
 
 main().catch((error) => {
   console.error('Failed to run diagnostics:', error);
-  process.exitCode = 1;
+  process.exitCode = process.exitCode && process.exitCode !== 0 ? process.exitCode : 1;
 });
