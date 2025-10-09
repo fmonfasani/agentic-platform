@@ -11,6 +11,7 @@ const config: Config = {
       'ts-jest',
       {
         tsconfig: '<rootDir>/tsconfig.jest.json',
+        diagnostics: false
       },
     ],
   },
