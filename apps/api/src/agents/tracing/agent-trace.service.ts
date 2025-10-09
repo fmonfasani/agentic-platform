@@ -9,6 +9,7 @@ const TRACE_SELECT = {
   status: true,
   grade: true,
   evaluator: true,
+  feedback: true,
   traceUrl: true,
   input: true,
   output: true,
@@ -53,6 +54,7 @@ export class AgentTraceService {
       status: string
       grade: number | null
       evaluator: string | null
+      feedback: string | null
       traceUrl: string | null
       output: unknown
     }>
@@ -61,6 +63,7 @@ export class AgentTraceService {
       status: data.status,
       grade: data.grade,
       evaluator: data.evaluator,
+      feedback: data.feedback,
       traceUrl: data.traceUrl,
       output: data.output !== undefined ? this.stringify(data.output) : undefined
     }
@@ -153,6 +156,7 @@ type TraceRecord = {
   status: string
   grade: number | null
   evaluator: string | null
+  feedback: string | null
   traceUrl: string | null
   input: string | null
   output: string | null
