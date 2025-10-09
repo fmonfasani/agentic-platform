@@ -8,6 +8,7 @@ const TRACE_SELECT = {
   runId: true,
   status: true,
   grade: true,
+  feedback: true,
   evaluator: true,
   traceUrl: true,
   input: true,
@@ -52,6 +53,7 @@ export class AgentTraceService {
     data: Partial<{
       status: string
       grade: number | null
+      feedback: string | null
       evaluator: string | null
       traceUrl: string | null
       output: unknown
@@ -60,6 +62,7 @@ export class AgentTraceService {
     const updateData = {
       status: data.status,
       grade: data.grade,
+      feedback: data.feedback,
       evaluator: data.evaluator,
       traceUrl: data.traceUrl,
       output: data.output !== undefined ? this.stringify(data.output) : undefined
@@ -152,6 +155,7 @@ type TraceRecord = {
   runId: string
   status: string
   grade: number | null
+  feedback: string | null
   evaluator: string | null
   traceUrl: string | null
   input: string | null
