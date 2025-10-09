@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../lib/config'
 
 type AgentCategory = keyof typeof agentGroups
 
+<<<<<<< Updated upstream
 const orderedColumns: AgentCategory[] = orderedAgentTypes
 
 type AgentSummary = AgentCardData & {
@@ -16,6 +17,10 @@ type AgentSummary = AgentCardData & {
 }
 
 type ApiAgent = {
+=======
+// === Tipos base ===
+type AgentSummary = {
+>>>>>>> Stashed changes
   id: string
   name: string
   area: string
@@ -31,6 +36,12 @@ type ApiAgent = {
   instructions?: string | null
 }
 
+<<<<<<< Updated upstream
+=======
+type AgentMetrics = AgentSummary & { type: AgentType }
+type GroupedAgents = Record<string, AgentMetrics[]>
+
+>>>>>>> Stashed changes
 type AgentTrace = {
   id: string
   runId: string
@@ -42,8 +53,41 @@ type AgentTrace = {
   output?: { role: string; content: string }[] | null
 }
 
+<<<<<<< Updated upstream
 export default function Page() {
   const [agents, setAgents] = useState<AgentSummary[]>([])
+=======
+type AgentDetail = {
+  id: string
+  name: string
+  area: string
+  description: string | null
+  updatedAt: string
+  metrics: {
+    uses: number
+    downloads: number
+    rewards: number
+    stars: number
+    votes: number
+  }
+  workflows: {
+    id: string
+    name: string
+    status: string
+    model: string
+    platform: string
+  }[]
+}
+
+// === Página principal ===
+export default function Page() {
+  const [agents, setAgents] = useState<AgentMetrics[]>([])
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [selectedDetails, setSelectedDetails] = useState<AgentDetail | null>(null)
+  const [traces, setTraces] = useState<AgentTrace[]>([])
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+>>>>>>> Stashed changes
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -56,10 +100,17 @@ export default function Page() {
       setLoading(true)
       try {
         const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
+<<<<<<< Updated upstream
         if (!res.ok) throw new Error('No se pudieron obtener los agentes')
 
         const data = (await res.json()) as ApiAgent[]
         const enriched: AgentSummary[] = data.map((agent) => ({
+=======
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
+
+        const data = (await res.json()) as AgentSummary[]
+        const enriched = data.map((agent) => ({
+>>>>>>> Stashed changes
           ...agent,
           description: agent.description ?? null,
           type: normalizeCategory(agent.type)
@@ -77,6 +128,7 @@ export default function Page() {
     loadAgents()
   }, [])
 
+<<<<<<< Updated upstream
   const filteredAgents = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
     const list = agents.filter((agent) => {
@@ -97,9 +149,16 @@ export default function Page() {
   const groupedByCategory = useMemo(() => {
     const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
       acc[category] = []
+=======
+  const grouped = useMemo<GroupedAgents>(() => {
+    return agents.reduce<GroupedAgents>((acc, agent) => {
+      if (!acc[agent.type]) acc[agent.type] = []
+      acc[agent.type].push(agent)
+>>>>>>> Stashed changes
       return acc
     }, {} as Record<AgentCategory, AgentSummary[]>)
 
+<<<<<<< Updated upstream
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
       if (!acc[category]) acc[category] = []
@@ -107,6 +166,63 @@ export default function Page() {
       return acc
     }, emptyGroups)
   }, [filteredAgents])
+=======
+  const selectedAgent = useMemo(() => agents.find((a) => a.id === openId) ?? null, [agents, openId])
+  const selectedAgentId = selectedAgent?.id ?? null
+
+  useEffect(() => {
+    if (!selectedAgentId) {
+      setSelectedDetails(null)
+      setTraces([])
+      return
+    }
+
+    let active = true
+    setDetailsLoading(true)
+    setDetailsError(null)
+
+    async function loadDetails() {
+      try {
+        const [detailsRes, tracesRes] = await Promise.all([
+          fetch(`/api/agents/${selectedAgentId}`, { cache: 'no-store' }),
+          fetch(`/api/agents/${selectedAgentId}/traces?take=10`, { cache: 'no-store' })
+        ])
+
+        if (!detailsRes.ok) throw new Error('No se pudieron obtener los detalles del agente seleccionado')
+
+        const details = (await detailsRes.json()) as AgentDetail
+        const traceData = tracesRes.ok ? ((await tracesRes.json()) as AgentTrace[]) : []
+
+        if (!active) return
+        setSelectedDetails(details)
+        setTraces(traceData)
+      } catch (err) {
+        console.error(err)
+        if (!active) return
+        setDetailsError(err instanceof Error ? err.message : 'Error al obtener detalles del agente')
+      } finally {
+        if (active) setDetailsLoading(false)
+      }
+    }
+
+    loadDetails()
+    return () => {
+      active = false
+    }
+  }, [selectedAgentId])
+
+  const refreshTraces = useCallback(async () => {
+    if (!selectedAgentId) return
+    try {
+      const response = await fetch(`/api/agents/${selectedAgentId}/traces?take=10`, { cache: 'no-store' })
+      if (!response.ok) return
+      const traceData = (await response.json()) as AgentTrace[]
+      setTraces(traceData)
+    } catch (error) {
+      console.error('No se pudieron actualizar las trazas del agente', error)
+    }
+  }, [selectedAgentId])
+>>>>>>> Stashed changes
 
   return (
     <main className="min-h-screen bg-[#050b15] px-6 pb-16 pt-12 text-white">
@@ -151,9 +267,21 @@ export default function Page() {
           </div>
         </header>
 
+<<<<<<< Updated upstream
         {error && (
           <div className="mt-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>
         )}
+=======
+      {loading ? (
+        <div className="mt-10 text-white/70">Cargando información de los agentes...</div>
+      ) : (
+        <section className="container-card mt-8">
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {orderedAgentTypes.map((type) => {
+              const metadata = agentGroups[type]
+              const agentsForType = grouped[type] ?? []
+              if (agentsForType.length === 0) return null
+>>>>>>> Stashed changes
 
         {loading ? (
           <div className="mt-16 flex items-center justify-center text-white/60">Cargando información de agentes…</div>
@@ -194,8 +322,16 @@ export default function Page() {
   )
 }
 
+// === Subcomponentes ===
 type WorkflowModalProps = {
   agent: AgentMetrics | null
+<<<<<<< Updated upstream
+=======
+  details: AgentDetail | null
+  traces: AgentTrace[]
+  loading: boolean
+  error: string | null
+>>>>>>> Stashed changes
   onClose: () => void
 }
 
@@ -251,6 +387,7 @@ function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
   }, [agent?.id])
 
   useEffect(() => {
+<<<<<<< Updated upstream
     if (agent) {
       setLog([
         `Se abrió el agente ${agent.name} (${agent.area ?? 'sin área asignada'})`,
@@ -298,6 +435,10 @@ function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
 
   const workflows = detail?.workflows ?? []
   const description = detail?.description ?? agent?.description ?? null
+=======
+    if (agent) onRefreshTraces()
+  }, [agent?.id, onRefreshTraces])
+>>>>>>> Stashed changes
 
   return (
     <AgentModal
@@ -312,6 +453,7 @@ function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
 
         {description && <p className="text-sm text-white/70">{description}</p>}
 
+<<<<<<< Updated upstream
         {metrics && (
           <div className="grid grid-cols-2 gap-3 text-xs text-white/80">
             <MetricPill label="⭐ Promedio" value={metrics.stars.toFixed(1)} />
@@ -319,6 +461,64 @@ function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
             <MetricPill label="⚡ Usos" value={metrics.uses.toString()} />
             <MetricPill label="⬇ Descargas" value={metrics.downloads.toString()} />
             <MetricPill label="🏆 Recompensas" value={metrics.rewards.toString()} />
+=======
+        {details && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-[#101a29] p-4">
+              <h3 className="text-sm font-semibold text-white/80">Descripción</h3>
+              <p className="text-sm text-white/60 mt-2">
+                {details.description ?? 'Este agente no tiene descripción documentada en la base.'}
+              </p>
+              <p className="text-[11px] text-white/40 mt-3">
+                Última actualización · {new Date(details.updatedAt).toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[#101a29] p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white/80">Integración AgentKit</h3>
+              <InfoRow label="ID OpenAI" value={details.metrics?.uses?.toString() ?? 'No registrado aún'} />
+              <InfoRow label="Modelo" value={details.workflows[0]?.model ?? 'gpt-4.1-mini'} />
+              <InfoRow
+                label="Instrucciones"
+                value={details.description ?? 'Se aplican las instrucciones generadas automáticamente en el backend.'}
+              />
+            </div>
+          </div>
+        )}
+
+        {agent && (
+          <div className="grid md:grid-cols-4 gap-3">
+            <MetricPill label="Usos" value={agent.uses} />
+            <MetricPill label="Descargas" value={agent.downloads} />
+            <MetricPill label="Recompensas" value={agent.rewards} />
+            <MetricPill label="Estrellas" value={`${agent.stars.toFixed(2)} (${agent.votes})`} />
+          </div>
+        )}
+
+        {agent && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white/80">Chat del agente</h3>
+              <button onClick={onRefreshTraces} className="text-xs text-[#16a34a] hover:text-[#22c55e]">
+                Actualizar trazas
+              </button>
+            </div>
+            <AgentChatKitEmbed
+              agentId={agent.id}
+              agentName={agent.name}
+              onConversationComplete={onRefreshTraces}
+            />
+          </div>
+        )}
+
+        {traces.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-white/80">Últimas ejecuciones</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {traces.map((trace) => (
+                <TraceCard key={trace.id} trace={trace} />
+              ))}
+            </div>
+>>>>>>> Stashed changes
           </div>
 >>>>>>> ddfe909135abb4e4c6a2a73c1e3a60090bc7873a
         )}
@@ -338,6 +538,7 @@ function normalizeCategory(type: string | null | undefined): AgentCategory {
 function inferAgentType(name: string): AgentCategory {
   const normalized = name.toLowerCase()
 
+<<<<<<< Updated upstream
   const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentCategory }[] = [
     { keywords: ['financ', 'contab'], type: 'financial' },
     { keywords: ['tecnic', 'infra'], type: 'technical' },
@@ -350,4 +551,52 @@ function inferAgentType(name: string): AgentCategory {
   }
 
   return 'technical'
+=======
+function TraceCard({ trace }: { trace: AgentTrace }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#0f1928] p-4 text-sm text-white/80 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs text-white/60">
+          <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">{trace.status}</span>
+          <span>{new Date(trace.createdAt).toLocaleString()}</span>
+        </div>
+        <div className="text-xs text-white/50">{trace.runId}</div>
+      </div>
+      <div className="text-xs text-white/60">
+        {trace.grade !== null ? `Evaluación automática: ${(trace.grade * 100).toFixed(0)}%` : 'Sin evaluación automática'}
+      </div>
+      <div className="flex flex-wrap gap-2 text-xs text-white/50">
+        {trace.evaluator && <span>{trace.evaluator}</span>}
+        {trace.traceUrl && (
+          <a href={trace.traceUrl} target="_blank" rel="noreferrer" className="text-[#22c55e] hover:underline">
+            Ver traza
+          </a>
+        )}
+      </div>
+      {Array.isArray(trace.output) && trace.output.length > 0 && (
+        <div className="rounded-lg border border-white/5 bg-black/10 p-3 space-y-2">
+          {trace.output.slice(-2).map((message, index) => (
+            <p key={index} className="text-xs text-white/60">
+              <span className="font-semibold text-white/70">{message.role}: </span>
+              {message.content}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+>>>>>>> Stashed changes
+}
+// === Helper para clasificar agentes por tipo ===
+function inferAgentType(name: string): AgentType {
+  const normalized = name.toLowerCase()
+
+  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
+  if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
+  if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
+  if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
+  if (normalized.includes('riesgo') || normalized.includes('riesgos')) return 'risk'
+  if (normalized.includes('planificación') || normalized.includes('proyecto')) return 'planning'
+
+  return 'general'
 }
