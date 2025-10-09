@@ -12,6 +12,7 @@ const orderedColumns: AgentCategory[] = ['technical', 'financial', 'regulatory',
 
 type AgentSummary = AgentCardData & {
   description: string | null
+  type?: AgentCategory
 }
 
 type ApiAgent = {
@@ -28,11 +29,8 @@ type ApiAgent = {
   openaiAgentId?: string | null
   model?: string | null
   instructions?: string | null
-  type?: AgentType
 }
 
-type AgentMetrics = AgentSummary & { type: AgentType }
-type GroupedAgents = Record<string, AgentMetrics[]>
 type AgentTrace = {
   id: string
   runId: string
@@ -63,9 +61,9 @@ export default function Page() {
         const data = (await res.json()) as AgentSummary[]
         const enriched = data.map((agent) => ({
           ...agent,
-          type: agent.type ?? inferAgentType(agent.name)
+          type: (agent.type as AgentCategory) ?? inferAgentType(agent.name)
         }))
-        setAgents(mapped)
+        setAgents(enriched)
         setError(null)
       } catch (err) {
         console.error(err)
@@ -90,9 +88,7 @@ export default function Page() {
     })
 
     return [...list].sort((a, b) => {
-      if (sortKey === 'stars') {
-        return b.stars - a.stars
-      }
+      if (sortKey === 'stars') return b.stars - a.stars
       return b.uses - a.uses
     })
   }, [agents, filter, search, sortKey])
@@ -100,12 +96,10 @@ export default function Page() {
   const groupedByCategory = useMemo(() => {
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
-      if (!acc[category]) {
-        acc[category] = []
-      }
+      if (!acc[category]) acc[category] = []
       acc[category].push(agent)
       return acc
-    }, { technical: [], financial: [], regulatory: [], reporting: [], risk: [], planning: [], general: [] } as Record<AgentCategory, AgentSummary[]>)
+    }, { technical: [], financial: [], regulatory: [], reporting: [] } as Record<AgentCategory, AgentSummary[]>)
   }, [filteredAgents])
 
   return (
@@ -192,21 +186,24 @@ export default function Page() {
 }
 
 function normalizeCategory(type: string | null | undefined): AgentCategory {
-  if (!type) return 'general'
-  if (type in agentGroups) {
-    return type as AgentCategory
-  }
+  if (!type) return 'technical'
+  if (type in agentGroups) return type as AgentCategory
   return inferAgentType(type)
 }
 
 function inferAgentType(name: string): AgentCategory {
   const normalized = name.toLowerCase()
 
+  const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentCategory }[] = [
+    { keywords: ['financ', 'contab'], type: 'financial' },
+    { keywords: ['tecnic', 'infra'], type: 'technical' },
+    { keywords: ['reglament', 'licenc'], type: 'regulatory' },
+    { keywords: ['report', 'informe'], type: 'reporting' }
+  ]
+
   for (const { keywords, type } of KEYWORD_TYPE_MAP) {
-    if (keywords.some((keyword) => normalized.includes(keyword))) {
-      return type
-    }
+    if (keywords.some((keyword) => normalized.includes(keyword))) return type
   }
 
-  return 'general'
+  return 'technical'
 }
