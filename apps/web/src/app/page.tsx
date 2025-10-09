@@ -23,6 +23,7 @@ type AgentSummary = {
   openaiAgentId?: string | null
   model?: string | null
   instructions?: string | null
+  type?: AgentType
 }
 
 type AgentMetrics = AgentSummary & { type: AgentType }
@@ -81,7 +82,7 @@ export default function Page() {
         const data = (await res.json()) as AgentSummary[]
         const enriched = data.map((agent) => ({
           ...agent,
-          type: inferAgentType(agent.name)
+          type: agent.type ?? inferAgentType(agent.name)
         }))
         setAgents(enriched)
         setError(null)
@@ -390,11 +391,11 @@ const KEYWORD_TYPE_MAP: { keywords: string[]; type: AgentType }[] = [
 function inferAgentType(name: string): AgentType {
   const normalized = name.toLowerCase()
 
-  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'technical'
-  if (normalized.includes('financiero') || normalized.includes('contable')) return 'financial'
-  if (normalized.includes('licencia') || normalized.includes('permiso')) return 'regulatory'
-  if (normalized.includes('informe') || normalized.includes('reporte')) return 'reporting'
+  for (const { keywords, type } of KEYWORD_TYPE_MAP) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) {
+      return type
+    }
+  }
 
-  // 👇 Agregar este return por defecto
-  return 'technical'
+  return 'general'
 }
