@@ -55,7 +55,7 @@ export class AgentsService {
     })
   }
 
-  async create(data: Prisma.AgentCreateInput) {
+  async create(data: any) {
     return this.prisma.agent.create({ data })
   }
 
