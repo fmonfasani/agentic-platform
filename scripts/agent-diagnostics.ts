@@ -1,166 +1,186 @@
-#!/usr/bin/env tsx
-import { spawn } from 'child_process';
-import { mkdir } from 'fs/promises';
-import * as path from 'path';
+import { execSync } from 'node:child_process'
+import * as path from 'node:path'
 
-interface CheckDefinition {
-  name: string;
-  command: string;
-  args?: string[];
-  cwd?: string;
+type TestStatus = 'passed' | 'failed'
+type ApiStatus = 'online' | 'offline'
+
+type ExecSyncError = Error & {
+  status?: number | null
+  stdout?: string | Buffer
+  stderr?: string | Buffer
 }
 
-interface CheckResult extends CheckDefinition {
-  status: 'passed' | 'failed' | 'errored';
-  exitCode: number | null;
-  durationMs: number;
-  stdout: string;
-  stderr: string;
-  errorMessage?: string;
+interface CommandResult {
+  label: string
+  command: string
+  exitCode: number
+  stdout: string
+  stderr: string
+  status: TestStatus
+  errorMessage?: string
 }
 
-const checks: CheckDefinition[] = [
-  {
-    name: 'Build API package',
-    command: 'pnpm',
-    args: ['-C', 'apps/api', 'build'],
-  },
-  {
-    name: 'Run root tests',
-    command: 'pnpm',
-    args: ['test'],
-  },
-];
+const repoRoot = path.resolve(__dirname, '..')
 
-async function ensureReportsDirectory() {
-  const reportsPath = path.resolve(process.cwd(), 'reports');
-  await mkdir(reportsPath, { recursive: true });
-}
+const HEALTH_PROBE_COMMAND =
+  process.env.AGENT_DIAGNOSTICS_HEALTH_COMMAND ?? 'pnpm exec node reporter/health-probe'
+const API_TEST_COMMAND =
+  process.env.AGENT_DIAGNOSTICS_API_TEST_COMMAND ??
+  'pnpm exec jest --config apps/api/jest.config.ts'
+const WEB_TEST_COMMAND =
+  process.env.AGENT_DIAGNOSTICS_WEB_TEST_COMMAND ??
+  'pnpm exec jest --config apps/web/jest.config.ts'
 
-function runCheck(definition: CheckDefinition): Promise<CheckResult> {
-  return new Promise((resolve) => {
-    const startedAt = Date.now();
-    const child = spawn(definition.command, definition.args ?? [], {
-      cwd: definition.cwd ?? process.cwd(),
-      shell: false,
-      env: process.env,
-    });
-
-    let stdout = '';
-    let stderr = '';
-    let errorMessage: string | undefined;
-    let resolved = false;
-
-    const finalize = (status: CheckResult['status'], exitCode: number | null, error?: string) => {
-      if (resolved) return;
-      resolved = true;
-      const durationMs = Date.now() - startedAt;
-
-      resolve({
-        ...definition,
-        status,
-        exitCode,
-        durationMs,
-        stdout: stdout.trimEnd(),
-        stderr: stderr.trimEnd(),
-        errorMessage: error,
-      });
-    };
-
-    child.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    child.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    child.on('error', (error) => {
-      errorMessage = error.message;
-      finalize('errored', null, error.message);
-    });
-
-    child.on('close', (code) => {
-      const status: CheckResult['status'] = errorMessage
-        ? 'errored'
-        : code === 0
-        ? 'passed'
-        : 'failed';
-
-      finalize(status, code, errorMessage);
-    });
-  });
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = ms / 1000;
-  return `${seconds.toFixed(1)}s`;
-}
-
-function renderMarkdown(results: CheckResult[]): string {
-  const header = '# Agent Diagnostics\n\n';
-  const tableHeader = '| Check | Status | Duration |\n| --- | --- | --- |\n';
-  const tableBody = results
-    .map((result) => {
-      const symbol =
-        result.status === 'passed' ? '✅' : result.status === 'failed' ? '❌' : '⚠️';
-      return `| ${result.name} | ${symbol} | ${formatDuration(result.durationMs)} |`;
-    })
-    .join('\n');
-
-  const sections = results
-    .map((result) => {
-      const symbol =
-        result.status === 'passed' ? '✅' : result.status === 'failed' ? '❌' : '⚠️';
-      const parts = [`## ${symbol} ${result.name}`, '', '**Command**', '', `\`${[result.command, ...(result.args ?? [])].join(' ')}\``];
-
-      if (result.exitCode !== null) {
-        parts.push('', `**Exit code:** ${result.exitCode}`);
-      }
-
-      parts.push('', `**Duration:** ${formatDuration(result.durationMs)}`);
-
-      if (result.errorMessage) {
-        parts.push('', `**Error:** ${result.errorMessage}`);
-      }
-
-      if (result.stdout) {
-        parts.push('', '**Stdout**', '', '```', result.stdout, '```');
-      }
-
-      if (result.stderr) {
-        parts.push('', '**Stderr**', '', '```', result.stderr, '```');
-      }
-
-      return parts.join('\n');
-    })
-    .join('\n\n');
-
-  return `${header}${tableHeader}${tableBody}\n\n${sections}\n`;
-}
-
-function renderJson(results: CheckResult[]): string {
-  return JSON.stringify(
-    {
-      generatedAt: new Date().toISOString(),
-      checks: results,
-    },
-    null,
-    2,
-  );
-}
-
-async function main() {
-  await ensureReportsDirectory();
-  const shouldOutputJson = process.argv.includes('--json');
-
-  const results: CheckResult[] = [];
-  for (const check of checks) {
-    // eslint-disable-next-line no-await-in-loop
-    const result = await runCheck(check);
-    results.push(result);
+function normaliseOutput(value: string | Buffer | undefined): string {
+  if (value === undefined) {
+    return ''
   }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  return value.toString('utf8')
+}
+
+function runCommand(label: string, command: string): CommandResult {
+  try {
+    const stdout = execSync(command, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    })
+
+    return {
+      label,
+      command,
+      exitCode: 0,
+      stdout,
+      stderr: '',
+      status: 'passed',
+    }
+  } catch (error) {
+    const execError = error as ExecSyncError
+    const exitCode = typeof execError.status === 'number' ? execError.status ?? 1 : 1
+
+    return {
+      label,
+      command,
+      exitCode,
+      stdout: normaliseOutput(execError.stdout),
+      stderr: normaliseOutput(execError.stderr),
+      status: 'failed',
+      errorMessage: execError.message,
+    }
+  }
+}
+
+function formatBlock(value: string): string {
+  const trimmed = value.replace(/\s+$/u, '')
+  return trimmed.length > 0 ? trimmed : '[no output]'
+}
+
+function printMarkdown(results: {
+  timestamp: string
+  apiStatus: ApiStatus
+  healthProbe: CommandResult
+  apiTests: CommandResult
+  webTests: CommandResult
+}) {
+  const { timestamp, apiStatus, healthProbe, apiTests, webTests } = results
+
+  console.log('# Agent Diagnostics Report')
+  console.log('')
+  console.log(`- Timestamp: ${timestamp}`)
+  console.log(`- API status: ${apiStatus}`)
+  console.log('')
+
+  console.log('## Summary')
+  console.log('| Check | Status | Exit code |')
+  console.log('| --- | --- | --- |')
+  console.log(`| API health probe | ${apiStatus} | ${healthProbe.exitCode} |`)
+  console.log(`| API test suite | ${apiTests.status} | ${apiTests.exitCode} |`)
+  console.log(`| Web test suite | ${webTests.status} | ${webTests.exitCode} |`)
+  console.log('')
+
+  for (const result of [healthProbe, apiTests, webTests]) {
+    console.log(`### ${result.label}`)
+    console.log(`- Command: \`${result.command}\``)
+    console.log(`- Status: ${result.label === 'API health probe' ? apiStatus : result.status}`)
+    console.log(`- Exit code: ${result.exitCode}`)
+    console.log('')
+
+    if (result.errorMessage) {
+      console.log('#### Error')
+      console.log('```')
+      console.log(formatBlock(result.errorMessage))
+      console.log('```')
+      console.log('')
+    }
+
+    console.log('#### Stdout')
+    console.log('```')
+    console.log(formatBlock(result.stdout))
+    console.log('```')
+    console.log('')
+
+    console.log('#### Stderr')
+    console.log('```')
+    console.log(formatBlock(result.stderr))
+    console.log('```')
+    console.log('')
+  }
+}
+
+function printJson(results: {
+  timestamp: string
+  apiStatus: ApiStatus
+  healthProbe: CommandResult
+  apiTests: CommandResult
+  webTests: CommandResult
+}) {
+  const payload = {
+    timestamp: results.timestamp,
+    api: {
+      status: results.apiStatus,
+      command: results.healthProbe.command,
+      exitCode: results.healthProbe.exitCode,
+      stdout: results.healthProbe.stdout,
+      stderr: results.healthProbe.stderr,
+      error: results.healthProbe.errorMessage ?? null,
+    },
+    tests: {
+      api: {
+        status: results.apiTests.status,
+        command: results.apiTests.command,
+        exitCode: results.apiTests.exitCode,
+        stdout: results.apiTests.stdout,
+        stderr: results.apiTests.stderr,
+        error: results.apiTests.errorMessage ?? null,
+      },
+      web: {
+        status: results.webTests.status,
+        command: results.webTests.command,
+        exitCode: results.webTests.exitCode,
+        stdout: results.webTests.stdout,
+        stderr: results.webTests.stderr,
+        error: results.webTests.errorMessage ?? null,
+      },
+    },
+  }
+
+  console.log(JSON.stringify(payload, null, 2))
+}
+
+const args = process.argv.slice(2)
+const useJson = args.includes('--json')
+
+const healthProbeResult = runCommand('API health probe', HEALTH_PROBE_COMMAND)
+const apiTestResult = runCommand('API test suite', API_TEST_COMMAND)
+const webTestResult = runCommand('Web test suite', WEB_TEST_COMMAND)
+
+const timestamp = new Date().toISOString()
+const apiStatus: ApiStatus = healthProbeResult.exitCode === 0 ? 'online' : 'offline'
 
   const output = shouldOutputJson ? renderJson(results) : renderMarkdown(results);
   process.stdout.write(output);
