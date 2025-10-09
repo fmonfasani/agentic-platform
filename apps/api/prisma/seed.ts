@@ -18,6 +18,26 @@ async function main() {
         name: 'Analista de Licencias',
         description: 'Controla los permisos y autorizaciones',
         area: 'Gestión de licencias'
+      },
+      {
+        name: 'Gestión Regulatoria',
+        description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
+        area: 'Gestión Regulatoria y Licencias',
+        uses: 58,
+        downloads: 24,
+        rewards: 6,
+        stars: 4.3,
+        votes: 42
+      },
+      {
+        name: 'Reportes e Informes',
+        description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
+        area: 'Reportes e Informes Institucionales',
+        uses: 87,
+        downloads: 33,
+        rewards: 11,
+        stars: 4.6,
+        votes: 73
       }
     ]
   });
