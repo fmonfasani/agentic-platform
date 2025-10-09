@@ -4,10 +4,13 @@ import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
 export class AgentEvalService {
-  private readonly openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  private readonly openai: OpenAI | null
   private readonly logger = new Logger(AgentEvalService.name)
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    const apiKey = process.env.OPENAI_API_KEY
+    this.openai = apiKey ? new OpenAI({ apiKey }) : null
+  }
 
   async evaluateTrace(traceId: string) {
     const trace = await this.prisma.agentTrace.findUnique({
@@ -16,7 +19,9 @@ export class AgentEvalService {
     })
     if (!trace) return
 
-    if (!process.env.OPENAI_API_KEY) {
+    const openai = this.openai
+
+    if (!openai) {
       this.logger.warn('❕ OPENAI_API_KEY no está configurada. Se omite la autoevaluación.')
       return
     }
@@ -48,7 +53,7 @@ Responde en JSON con los campos:
   "feedback": "comentario"
 }`
 
-      const response = await this.openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'Sos un evaluador técnico del ENACOM.' },

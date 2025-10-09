@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
 
@@ -40,6 +41,23 @@ const addAgentType = (agent: AgentSummaryRow): AgentSummary => ({
 @Injectable()
 export class AgentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findAll() {
+    return this.prisma.agent.findMany({
+      include: { workflows: true, traces: true }
+    })
+  }
+
+  async findOne(id: string) {
+    return this.prisma.agent.findUnique({
+      where: { id },
+      include: { workflows: true, traces: true }
+    })
+  }
+
+  async create(data: Prisma.AgentCreateInput) {
+    return this.prisma.agent.create({ data })
+  }
 
   listAgents() {
     return this.prisma.agent
