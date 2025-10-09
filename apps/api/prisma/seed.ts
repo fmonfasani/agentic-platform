@@ -21,6 +21,7 @@ async function main() {
       },
       {
         name: 'Gestión Regulatoria',
+        type: 'regulatory',
         description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
         area: 'Gestión Regulatoria y Licencias',
         uses: 58,
@@ -31,6 +32,7 @@ async function main() {
       },
       {
         name: 'Reportes e Informes',
+        type: 'reporting',
         description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
         area: 'Reportes e Informes Institucionales',
         uses: 87,
