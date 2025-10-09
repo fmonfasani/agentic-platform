@@ -1,28 +1,33 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common'
-import { AgentRunnerService } from './agent-runner.service'
-import { AgentsService } from './agents.service'
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { AgentRunnerService } from './agent-runner.service';
+import { AgentsService } from './agents.service';
+
+type CreateAgentDto = Parameters<AgentsService['create']>[0];
 
 @Controller('agents')
 export class AgentsController {
-  constructor(private readonly agentsService: AgentsService, private readonly runnerService: AgentRunnerService) {}
+  constructor(
+    private readonly agentsService: AgentsService,
+    private readonly runnerService: AgentRunnerService,
+  ) {}
 
   @Get()
   getAll() {
-    return this.agentsService.findAll()
+    return this.agentsService.findAll();
   }
 
   @Get(':id')
   getById(@Param('id') id: string) {
-    return this.agentsService.findOne(id)
+    return this.agentsService.findOne(id);
   }
 
   @Post()
-  create(@Body() data: any) {
-    return this.agentsService.create(data)
+  create(@Body() data: CreateAgentDto) {
+    return this.agentsService.create(data);
   }
 
   @Post(':id/chat-session')
   createChatSession(@Param('id') id: string) {
-    return this.runnerService.createChatSession(id)
+    return this.runnerService.createChatSession(id);
   }
 }
