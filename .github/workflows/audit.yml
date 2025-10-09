@@ -29,12 +29,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build API application
-        run: pnpm build
+      - name: Run API tests
+        run: pnpm test
         working-directory: apps/api
 
-      - name: Build Web application
-        run: pnpm build
+      - name: Run Web tests
+        run: pnpm test
         working-directory: apps/web
 
       - name: Prepare reports directory
@@ -52,15 +52,15 @@ jobs:
       - name: Send audit email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.AUDIT_SMTP_SERVER }}
-          server_port: ${{ secrets.AUDIT_SMTP_PORT }}
-          secure: true
-          username: ${{ secrets.AUDIT_SMTP_USERNAME }}
-          password: ${{ secrets.AUDIT_SMTP_PASSWORD }}
-          subject: Agentic Platform Audit Report
-          from: ${{ secrets.AUDIT_MAIL_FROM }}
-          to: ${{ secrets.AUDIT_MAIL_TO }}
-          body: file://reports/agent-audit.md
+            server: ${{ secrets.AUDIT_SMTP_SERVER }}
+            port: ${{ secrets.AUDIT_SMTP_PORT }}
+            secure: true
+            username: ${{ secrets.AUDIT_SMTP_USERNAME }}
+            password: ${{ secrets.AUDIT_SMTP_PASSWORD }}
+            subject: Agentic Platform Audit Report
+            from: ${{ secrets.AUDIT_MAIL_FROM }}
+            to: ${{ secrets.AUDIT_MAIL_TO }}
+            body: file://reports/agent-audit.md
           attachments: |
             reports/agent-audit.md
             reports/agent-audit.json
