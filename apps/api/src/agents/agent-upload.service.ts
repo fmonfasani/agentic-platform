@@ -4,10 +4,15 @@ import {
   UnsupportedMediaTypeException
 } from '@nestjs/common'
 import parsePdf from 'pdf-parse'
+import type { Express } from 'express'
 import { AgentRunnerService } from './agent-runner.service'
 import { AgentTraceService } from './tracing/agent-trace.service'
 
 export type AgentUploadFile = Express.Multer.File;
+
+type PdfParser = (data: Buffer | Uint8Array, options?: unknown) => Promise<{ text?: string }>
+
+const parsePdfBuffer = parsePdf as unknown as PdfParser
 
 @Injectable()
 export class AgentUploadService {
@@ -31,7 +36,7 @@ export class AgentUploadService {
 
     let parsed;
     try {
-      parsed = await parsePdf(file.buffer);
+      parsed = await parsePdfBuffer(file.buffer);
     } catch (error) {
       throw new BadRequestException('Failed to process the uploaded PDF file.');
     }
