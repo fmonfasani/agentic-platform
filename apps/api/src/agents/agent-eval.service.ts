@@ -12,6 +12,24 @@ export class AgentEvalService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null
   }
 
+  private async waitForEvalRunCompletion(openai: OpenAI, evalId: string, runId: string) {
+    const timeoutMs = 60_000
+    const pollIntervalMs = 2_000
+    const start = Date.now()
+
+    while (Date.now() - start < timeoutMs) {
+      const currentRun = await openai.evals.runs.retrieve(runId, { eval_id: evalId })
+
+      if (currentRun.status !== 'queued' && currentRun.status !== 'in_progress') {
+        return currentRun
+      }
+
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs))
+    }
+
+    throw new Error('La evaluación excedió el tiempo de espera configurado')
+  }
+
   async evaluateTrace(traceId: string) {
     const trace = await this.prisma.agentTrace.findUnique({
       where: { id: traceId },
@@ -54,50 +72,85 @@ export class AgentEvalService {
           description: 'Confirma que los datos aportados sean correctos y estén bien fundamentados.'
         }
       ]
-
-      const evalPayload: Record<string, any> = {
-        model: 'gpt-4o-mini',
-        task_type: 'graded_generation',
-        input: {
-          trace_id: traceId,
-          agent_name: trace.agent?.name ?? 'Desconocido',
-          prompt: trace.input ?? 'Sin información',
-          completion: trace.output
+      const evaluation = await openai.evals.create({
+        name: `trace-${traceId}-${Date.now()}`,
+        data_source_config: {
+          type: 'custom',
+          item_schema: {
+            type: 'object',
+            required: ['prompt', 'completion'],
+            properties: {
+              trace_id: { type: 'string' },
+              agent_name: { type: 'string' },
+              prompt: { type: 'string' },
+              completion: { type: 'string' }
+            }
+          },
+          include_sample_schema: true
         },
-        criteria,
-        rubric:
-          'Evalúa la calidad de la respuesta del agente del ENACOM considerando claridad técnica, coherencia institucional, nivel de detalle y precisión de los datos.'
+        testing_criteria: criteria
+      } as any)
+
+      const run = await openai.evals.runs.create(evaluation.id, {
+        name: `trace-${traceId}`,
+        data_source: {
+          type: 'jsonl',
+          source: {
+            type: 'file_content',
+            content: [
+              {
+                item: {
+                  trace_id: traceId,
+                  agent_name: trace.agent?.name ?? 'Desconocido',
+                  prompt: trace.input ?? 'Sin información',
+                  completion: trace.output
+                },
+                sample: {
+                  output: [
+                    {
+                      role: 'assistant',
+                      content: trace.output
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      } as any)
+
+      const finalRun = await this.waitForEvalRunCompletion(openai, evaluation.id, run.id)
+
+      if (finalRun.status !== 'completed') {
+        throw new Error(`La ejecución de la evaluación terminó con estado ${finalRun.status ?? 'desconocido'}`)
       }
 
-      const response = await (openai.evals.create as any)(evalPayload)
+      const outputItems = await openai.evals.runs.outputItems.list(run.id, {
+        eval_id: evaluation.id,
+        limit: 1
+      })
 
-      const result = response?.results?.[0] ?? response?.scores?.[0] ?? null
-      const rawGrade =
-        (typeof result?.score === 'number'
-          ? result.score
-          : typeof result?.grade === 'number'
-            ? result.grade
-            : typeof response?.score === 'number'
-              ? response.score
-              : typeof response?.grade === 'number'
-                ? response.grade
-                : 0)
-      const grade = Math.min(1, Math.max(0, Number.isFinite(rawGrade) ? rawGrade : 0))
-      const feedback =
-        result?.feedback ??
-        result?.reason ??
-        result?.explanation ??
-        response?.feedback ??
-        response?.reason ??
-        'Sin comentarios'
+      const firstItem = outputItems?.data?.[0]
+      const scores = firstItem?.results
+        ?.map(result => (typeof result.score === 'number' && Number.isFinite(result.score) ? result.score : null))
+        .filter((value): value is number => value !== null) ?? []
+
+      const grade = scores.length ? Math.min(1, Math.max(0, scores.reduce((sum, value) => sum + value, 0) / scores.length)) : 0
+
+      const feedbackSegments = firstItem?.results?.map(result => {
+        const badge = result.passed ? '✅' : '❌'
+        const score = typeof result.score === 'number' && Number.isFinite(result.score) ? result.score.toFixed(2) : 'N/A'
+        return `${result.name ?? 'Criterio'}: ${badge} (${score})`
+      }) ?? []
+      const feedback = feedbackSegments.length ? feedbackSegments.join(' | ') : 'Sin comentarios'
 
       await this.prisma.agentTrace.update({
         where: { id: traceId },
-        data: { grade, evaluator: 'auto-eval' }
+        data: { grade, evaluator: 'auto-eval', feedback }
       })
 
       this.logger.log(`✅ Evaluación completada para traza ${traceId}`)
-      return { grade }
+      return { grade, feedback }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.error?.message ?? err?.message ?? 'Error desconocido'
       this.logger.error(`❌ Error evaluando traza ${traceId}: ${errorMessage}`)
