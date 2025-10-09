@@ -10,7 +10,7 @@
     "lint": "echo 'add your linter'",
     "format": "prettier -w .",
     "test": "jest",
-    "test:ui": "pnpm -C apps/web test:ui"
+    "diagnostics": "tsx scripts/agent-diagnostics.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
@@ -26,6 +26,7 @@
     "rimraf": "^5.0.10",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
+    "tsx": "^4.20.6",
     "turbo": "^2.0.6"
   },
   "workspaces": [

@@ -56,12 +56,13 @@ export default function Page() {
       setLoading(true)
       try {
         const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes')
 
-        const data = (await res.json()) as AgentSummary[]
-        const enriched = data.map((agent) => ({
+        const data = (await res.json()) as ApiAgent[]
+        const enriched: AgentSummary[] = data.map((agent) => ({
           ...agent,
-          type: (agent.type as AgentCategory) ?? inferAgentType(agent.name)
+          description: agent.description ?? null,
+          type: normalizeCategory(agent.type)
         }))
         setAgents(enriched)
         setError(null)
@@ -94,12 +95,17 @@ export default function Page() {
   }, [agents, filter, search, sortKey])
 
   const groupedByCategory = useMemo(() => {
+    const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
+      acc[category] = []
+      return acc
+    }, {} as Record<AgentCategory, AgentSummary[]>)
+
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
       if (!acc[category]) acc[category] = []
       acc[category].push(agent)
       return acc
-    }, { technical: [], financial: [], regulatory: [], reporting: [] } as Record<AgentCategory, AgentSummary[]>)
+    }, emptyGroups)
   }, [filteredAgents])
 
   return (
@@ -108,9 +114,9 @@ export default function Page() {
         <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-950/40 p-8 shadow-2xl">
           <div className="flex flex-col gap-2">
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/70">Sistema de Agentes Autónomos</p>
-            <h1 className="text-3xl font-semibold text-white/90">Panel de Control ENACOM</h1>
+            <h1 className="text-3xl font-semibold text-white/90">Dashboard de Agentes</h1>
             <p className="text-sm text-white/60">
-              Monitoree el uso de los agentes analíticos, informes y reportes estratégicos del Ente Nacional de Comunicaciones.
+              Monitor de agentes.
             </p>
           </div>
 
@@ -176,7 +182,145 @@ export default function Page() {
                 </div>
               )
             })}
+<<<<<<< HEAD
           </section>
+=======
+          </div>
+        </section>
+      )}
+
+      <AgentWorkflowModal agent={selectedAgent} onClose={() => setOpenId(null)} />
+    </div>
+  )
+}
+
+type WorkflowModalProps = {
+  agent: AgentMetrics | null
+  onClose: () => void
+}
+
+function AgentWorkflowModal({ agent, onClose }: WorkflowModalProps) {
+  const [input, setInput] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [log, setLog] = useState<string[]>([
+    'Necesito generar un análisis detallado del último trimestre',
+    'Entendido. Iniciando proceso de análisis. Por favor, especifique los parámetros requeridos o adjunte los archivos necesarios.'
+  ])
+  const [detail, setDetail] = useState<AgentDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!agent) {
+      setDetail(null)
+      setDetailError(null)
+      setDetailLoading(false)
+      return
+    }
+
+    let cancelled = false
+    async function loadDetail() {
+      setDetailLoading(true)
+      setDetailError(null)
+      try {
+        const res = await fetch(`${API_BASE_URL}/agents/${agent.id}`, { cache: 'no-store' })
+        if (!res.ok) {
+          throw new Error('No se pudo obtener el detalle del agente')
+        }
+        const data = (await res.json()) as AgentDetail
+        if (!cancelled) {
+          setDetail(data)
+        }
+      } catch (err) {
+        console.error(err)
+        if (!cancelled) {
+          setDetailError(err instanceof Error ? err.message : 'Error inesperado al cargar el detalle del agente')
+        }
+      } finally {
+        if (!cancelled) {
+          setDetailLoading(false)
+        }
+      }
+    }
+
+    loadDetail()
+
+    return () => {
+      cancelled = true
+    }
+  }, [agent?.id])
+
+  useEffect(() => {
+    if (agent) {
+      setLog([
+        `Se abrió el agente ${agent.name} (${agent.area ?? 'sin área asignada'})`,
+        'Indique las instrucciones para ejecutar un nuevo flujo de trabajo.'
+      ])
+      setInput('')
+    }
+  }, [agent?.id])
+
+  async function run(action: string) {
+    if (!agent) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/agents/${agent.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input, action })
+      })
+
+      if (!res.ok) {
+        throw new Error('No se pudo ejecutar el flujo del agente')
+      }
+
+      const data = await res.json()
+      setLog((history) => [...history, `▶ ${action}`, `✔ ${data.status} · ${data.runId}`])
+    } catch (err) {
+      console.error(err)
+      const message = err instanceof Error ? err.message : 'Error inesperado al ejecutar el flujo'
+      setLog((history) => [...history, `⚠️ ${message}`])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const metrics = detail?.metrics ??
+    (agent
+      ? {
+          uses: agent.uses,
+          downloads: agent.downloads,
+          rewards: agent.rewards,
+          stars: agent.stars,
+          votes: agent.votes
+        }
+      : null)
+
+  const workflows = detail?.workflows ?? []
+  const description = detail?.description ?? agent?.description ?? null
+
+  return (
+    <AgentModal
+      open={!!agent}
+      onClose={onClose}
+      title={detail?.name ?? agent?.name ?? 'Agente ENACOM'}
+      subtitle={detail?.area ?? agent?.area ?? undefined}
+    >
+      <div className="space-y-6">
+        {detailLoading && <p className="text-sm text-white/70">Cargando información del agente...</p>}
+        {detailError && <p className="text-sm text-red-400">{detailError}</p>}
+
+        {description && <p className="text-sm text-white/70">{description}</p>}
+
+        {metrics && (
+          <div className="grid grid-cols-2 gap-3 text-xs text-white/80">
+            <MetricPill label="⭐ Promedio" value={metrics.stars.toFixed(1)} />
+            <MetricPill label="🗳️ Votos" value={metrics.votes.toString()} />
+            <MetricPill label="⚡ Usos" value={metrics.uses.toString()} />
+            <MetricPill label="⬇ Descargas" value={metrics.downloads.toString()} />
+            <MetricPill label="🏆 Recompensas" value={metrics.rewards.toString()} />
+          </div>
+>>>>>>> ddfe909135abb4e4c6a2a73c1e3a60090bc7873a
         )}
       </div>
 

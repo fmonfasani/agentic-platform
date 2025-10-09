@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
 type MetricField = 'uses' | 'downloads' | 'rewards'
@@ -36,7 +37,12 @@ export class MetricsService {
       throw new NotFoundException('Agent not found')
     }
 
-    const safeStars = Math.max(0, Math.min(5, stars))
+    const parsedStars = Number(stars)
+    if (!Number.isFinite(parsedStars)) {
+      throw new BadRequestException('Invalid rating payload: "stars" must be a finite number')
+    }
+
+    const safeStars = Math.max(0, Math.min(5, parsedStars))
     const calculatedAverage = agent.votes === 0 ? safeStars : (agent.stars * agent.votes + safeStars) / (agent.votes + 1)
     const newAverage = Number(calculatedAverage.toFixed(2))
 

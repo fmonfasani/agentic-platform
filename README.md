@@ -101,3 +101,17 @@ La integración permite:
   ```
 
 - El script `apps/api/prisma/seed.ts` crea agentes con métricas iniciales para la demo del dashboard.
+
+## Diagnósticos automatizados
+
+El repositorio incluye un script que consolida los chequeos técnicos más relevantes (build del backend y tests globales) y los vuelca en Markdown o JSON. Podés ejecutarlo manualmente o desde CI:
+
+```bash
+# Salida en Markdown (por defecto)
+pnpm exec tsx scripts/agent-diagnostics.ts
+
+# Salida estructurada en JSON
+pnpm exec tsx scripts/agent-diagnostics.ts --json
+```
+
+Los reportes generados se imprimen por STDOUT. Si necesitás guardarlos en disco, redirigí la salida (`> reports/archivo.md`).

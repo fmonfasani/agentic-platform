@@ -65,6 +65,7 @@ describe('Agents API Day 1 flows (e2e)', () => {
   let server: any
   let databaseFile: string
   let previousDatabaseUrl: string | undefined
+  let hadDatabaseUrl = false
   let prismaClientReady = false
 
   const seedAgents = [
@@ -102,6 +103,7 @@ describe('Agents API Day 1 flows (e2e)', () => {
     databaseFile = join(__dirname, 'tmp', `day1-${randomUUID()}.sqlite`)
     mkdirSync(dirname(databaseFile), { recursive: true })
     const databaseUrl = `file:${databaseFile}`
+    hadDatabaseUrl = Object.prototype.hasOwnProperty.call(process.env, 'DATABASE_URL')
     previousDatabaseUrl = process.env.DATABASE_URL
     process.env.DATABASE_URL = databaseUrl
 
@@ -144,8 +146,10 @@ describe('Agents API Day 1 flows (e2e)', () => {
     if (app) {
       await app.close()
     }
-    if (previousDatabaseUrl !== undefined) {
+    if (hadDatabaseUrl) {
       process.env.DATABASE_URL = previousDatabaseUrl
+    } else {
+      delete process.env.DATABASE_URL
     }
     try {
       rmSync(databaseFile, { force: true })
