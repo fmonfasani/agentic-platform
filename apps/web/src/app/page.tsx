@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AgentCard, type AgentCardData } from '../components/AgentCard'
 import { AgentDetailsModal } from '../components/AgentDetailsModal'
-import { agentGroups } from '../lib/agents-data'
+import { agentGroups, orderedAgentTypes } from '../lib/agents-data'
 import { API_BASE_URL } from '../lib/config'
 
 type AgentCategory = keyof typeof agentGroups
 
-const orderedColumns: AgentCategory[] = ['technical', 'financial', 'regulatory', 'reporting']
+const orderedColumns: AgentCategory[] = orderedAgentTypes
 
 type AgentSummary = AgentCardData & {
   description: string | null
