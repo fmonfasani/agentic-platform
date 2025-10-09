@@ -30,6 +30,7 @@ model Agent {
   model         String?       @default("gpt-4.1-mini")
   instructions  String?
   updatedAt     DateTime      @updatedAt
+
   usages        AgentUsage[]
   traces        AgentTrace[]
   workflows     Workflow[]
@@ -47,6 +48,23 @@ model AgentUsage {
   @@index([agentId])
 }
 
+model AgentTrace {
+  id        String   @id @default(uuid())
+  agentId   String
+  runId     String?
+  status    String?       // puede ser “completed”, “failed”, etc.
+  grade     Float?
+  feedback  String?
+  evaluator String?
+  traceUrl  String?
+  input     String?
+  output    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agent     Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
 model Workflow {
   id        String   @id @default(uuid())
   name      String
@@ -58,18 +76,4 @@ model Workflow {
   agentId   String
   agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-}
-
-model AgentTrace {
-  id        String   @id @default(uuid())
-  agentId   String
-  runId     String
-  status    String
-  grade     Float?
-  evaluator String?
-  traceUrl  String?
-  input     String?
-  output    String?
-  createdAt DateTime @default(now())
-  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }

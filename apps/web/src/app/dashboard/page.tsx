@@ -27,6 +27,15 @@ type LeaderboardResponse = {
   areas: AreaSummary[]
 }
 
+const DASHBOARD_BASE_URL =
+  process.env.NEXT_PUBLIC_ENACOM_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/?api\/?$/, '') ??
+  ''
+
+const DASHBOARD_LEADERBOARD_ENDPOINT = DASHBOARD_BASE_URL
+  ? `${DASHBOARD_BASE_URL.replace(/\/$/, '')}/dashboard/leaderboard`
+  : '/dashboard/leaderboard'
+
 export default function DashboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
