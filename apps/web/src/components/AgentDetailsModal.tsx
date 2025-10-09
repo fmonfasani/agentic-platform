@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { Clock, Gauge, Link2, Loader2, Mic, Paperclip, Presentation, RotateCcw, Video, Workflow } from 'lucide-react'
 import AgentModal from './AgentModal'
 import { API_BASE_URL, OPENAI_CAPABILITIES } from '../lib/config'
@@ -59,6 +60,10 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
   const [input, setInput] = useState('')
   const [isRunning, setIsRunning] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const formattedCapabilities = useMemo(() => OPENAI_CAPABILITIES.map((cap, index) => ({
     label: cap,
@@ -72,6 +77,8 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
     setConversation([])
     setInput('')
     setError(null)
+    setUploadSuccess(null)
+    setUploadError(null)
   }, [])
 
   const fetchTraces = useCallback(async (agentId: string) => {
@@ -180,6 +187,47 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
     }
   }, [agent, input, fetchTraces])
 
+  const handleFileUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      if (!agent) return
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setUploadSuccess(null)
+      setUploadError(null)
+      setIsUploading(true)
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/agents/${agent.id}/upload`, {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || 'No se pudo generar el informe a partir del archivo cargado')
+        }
+
+        setUploadSuccess('Informe generado correctamente')
+        fetchTraces(agent.id)
+      } catch (err) {
+        console.error('Error al subir el informe', err)
+        setUploadError(
+          err instanceof Error ? err.message : 'Ocurrió un error inesperado al subir el informe'
+        )
+      } finally {
+        setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }
+    },
+    [agent, fetchTraces]
+  )
+
   const metricsCards = useMemo(() => {
     if (!metrics) return []
 
@@ -254,7 +302,7 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
               {detail.instructions && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Instrucciones Base</p>
-                  <p className="mt-1 text-sm text-white/65 whitespace-pre-line">{detail.instructions}</p>
+                  <p className="mt-1 text-sm text-white/[0.65] whitespace-pre-line">{detail.instructions}</p>
                 </div>
               )}
             </article>
@@ -302,8 +350,9 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
             </div>
             <button
               onClick={() => agent && fetchTraces(agent.id)}
-              className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-300/60 hover:text-emerald-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-300/60 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
+              disabled={isUploading}
             >
               <RotateCcw className="h-4 w-4" />
               Actualizar registros
@@ -333,24 +382,55 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
             ))}
           </div>
 
+          {uploadSuccess && (
+            <div className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">
+              {uploadSuccess}
+            </div>
+          )}
+          {uploadError && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-200">
+              {uploadError}
+            </div>
+          )}
+
           <div className="space-y-3">
             <textarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
               placeholder="Ingrese su consulta o instrucciones…"
               rows={3}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/70 focus:outline-none"
+              disabled={isUploading}
+              className="w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/70 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-900/40 disabled:text-white/40"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2 text-xs">
-                <ActionChip icon={<Paperclip className="h-4 w-4" />} label="Adjuntar Archivo" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/60 transition hover:border-white/20 hover:text-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-emerald-300/80" />
+                  ) : (
+                    <Paperclip className="h-4 w-4 text-emerald-300/80" />
+                  )}
+                  Subir informe PDF
+                </button>
                 <ActionChip icon={<Mic className="h-4 w-4" />} label="Entrada de Voz" />
                 <ActionChip icon={<Video className="h-4 w-4" />} label="Adjuntar Video" />
                 <ActionChip icon={<Link2 className="h-4 w-4" />} label="Adjuntar Enlace" />
               </div>
               <button
                 type="button"
-                disabled={isRunning || !input.trim()}
+                disabled={isRunning || isUploading || !input.trim()}
                 onClick={handleRun}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/40"
               >

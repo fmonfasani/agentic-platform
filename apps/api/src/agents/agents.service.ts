@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
 
 const AGENT_SUMMARY_SELECT = {
@@ -31,13 +30,6 @@ type AgentSummaryRow = {
   instructions: string | null
 }
 
-type AgentSummary = AgentSummaryRow & { type: AgentType }
-
-const addAgentType = (agent: AgentSummaryRow): AgentSummary => ({
-  ...agent,
-  type: inferAgentType(agent.name)
-})
-
 @Injectable()
 export class AgentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -55,17 +47,15 @@ export class AgentsService {
     })
   }
 
-  async create(data: Prisma.AgentCreateInput) {
+  async create(data: any) {
     return this.prisma.agent.create({ data })
   }
 
   listAgents() {
-    return this.prisma.agent
-      .findMany({
-        select: AGENT_SUMMARY_SELECT,
-        orderBy: { name: 'asc' }
-      })
-      .then((agents) => agents.map(addAgentType))
+    return this.prisma.agent.findMany({
+      select: AGENT_SUMMARY_SELECT,
+      orderBy: { name: 'asc' }
+    })
   }
 
   async getAgent(id: string) {
@@ -86,12 +76,12 @@ export class AgentsService {
       throw new NotFoundException('Agent not found')
     }
 
-    return addAgentType(agent)
+    return agent
   }
 
   async updateAgentAgentKitMetadata(
     id: string,
-    metadata: Partial<Pick<AgentSummary, 'openaiAgentId' | 'instructions' | 'model'>>
+    metadata: Partial<Pick<AgentSummaryRow, 'openaiAgentId' | 'instructions' | 'model'>>
   ) {
     const agent = await this.prisma.agent.update({
       where: { id },
@@ -99,7 +89,7 @@ export class AgentsService {
       select: AGENT_SUMMARY_SELECT
     })
 
-    return addAgentType(agent)
+    return agent
   }
 }
 

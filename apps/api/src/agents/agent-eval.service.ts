@@ -93,11 +93,11 @@ export class AgentEvalService {
 
       await this.prisma.agentTrace.update({
         where: { id: traceId },
-        data: { grade, feedback, evaluator: 'auto-eval' }
+        data: { grade, evaluator: 'auto-eval' }
       })
 
       this.logger.log(`✅ Evaluación completada para traza ${traceId}`)
-      return { grade, feedback }
+      return { grade }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.error?.message ?? err?.message ?? 'Error desconocido'
       this.logger.error(`❌ Error evaluando traza ${traceId}: ${errorMessage}`)
