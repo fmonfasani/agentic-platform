@@ -80,7 +80,7 @@ export class AgentRunnerService {
           ...finalTrace,
           grade: evaluation.grade,
           feedback: evaluation.feedback,
-          evaluator: 'auto-eval'
+          evaluator: evaluation.evaluator
         }
       : finalTrace
 
