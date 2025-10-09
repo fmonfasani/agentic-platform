@@ -8,12 +8,12 @@ export class AgentsController {
 
   @Get()
   getAll() {
-    return this.agentsService.findAll()
+    return this.agentsService.listAgents()
   }
 
   @Get(':id')
   getById(@Param('id') id: string) {
-    return this.agentsService.findOne(id)
+    return this.agentsService.getAgent(id)
   }
 
   @Post()
