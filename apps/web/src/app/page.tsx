@@ -56,12 +56,13 @@ export default function Page() {
       setLoading(true)
       try {
         const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!res.ok) throw new Error('No se pudieron obtener los agentes del ENACOM')
+        if (!res.ok) throw new Error('No se pudieron obtener los agentes')
 
-        const data = (await res.json()) as AgentSummary[]
-        const enriched = data.map((agent) => ({
+        const data = (await res.json()) as ApiAgent[]
+        const enriched: AgentSummary[] = data.map((agent) => ({
           ...agent,
-          type: (agent.type as AgentCategory) ?? inferAgentType(agent.name)
+          description: agent.description ?? null,
+          type: normalizeCategory(agent.type)
         }))
         setAgents(enriched)
         setError(null)
@@ -94,12 +95,17 @@ export default function Page() {
   }, [agents, filter, search, sortKey])
 
   const groupedByCategory = useMemo(() => {
+    const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
+      acc[category] = []
+      return acc
+    }, {} as Record<AgentCategory, AgentSummary[]>)
+
     return filteredAgents.reduce<Record<AgentCategory, AgentSummary[]>>((acc, agent) => {
       const category = normalizeCategory(agent.type)
       if (!acc[category]) acc[category] = []
       acc[category].push(agent)
       return acc
-    }, { technical: [], financial: [], regulatory: [], reporting: [] } as Record<AgentCategory, AgentSummary[]>)
+    }, emptyGroups)
   }, [filteredAgents])
 
   return (
@@ -108,9 +114,9 @@ export default function Page() {
         <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-950/40 p-8 shadow-2xl">
           <div className="flex flex-col gap-2">
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/70">Sistema de Agentes Autónomos</p>
-            <h1 className="text-3xl font-semibold text-white/90">Panel de Control ENACOM</h1>
+            <h1 className="text-3xl font-semibold text-white/90">Dashboard de Agentes</h1>
             <p className="text-sm text-white/60">
-              Monitoree el uso de los agentes analíticos, informes y reportes estratégicos del Ente Nacional de Comunicaciones.
+              Monitor de agentes.
             </p>
           </div>
 

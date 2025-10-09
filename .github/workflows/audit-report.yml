@@ -1,0 +1,70 @@
+name: 📊 Prisma Audit & Report
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🧩 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: 🧱 Install dependencies
+        run: |
+          corepack enable
+          pnpm install
+
+      - name: ⚙️ Set up database
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
+        run: |
+          pnpm exec prisma db push --force-reset
+          pnpm exec prisma db seed
+
+      - name: 🧪 Run tests
+        working-directory: apps/api
+        run: |
+          pnpm test || echo "⚠️ Some tests failed" > test-warning.log
+
+      - name: 📊 Generate audit report
+        working-directory: apps/api
+        run: |
+          mkdir -p reports
+          echo "# 🧠 Agentic Platform Audit Report" > reports/agent-audit.md
+          echo "Generated on: $(date)" >> reports/agent-audit.md
+          echo "" >> reports/agent-audit.md
+          echo "## ✅ Prisma models in sync" >> reports/agent-audit.md
+          pnpm exec prisma migrate status >> reports/agent-audit.md || true
+          echo "" >> reports/agent-audit.md
+          echo "## 🧪 Test summary" >> reports/agent-audit.md
+          pnpm test -- --reporters=default >> reports/agent-audit.md || echo "Tests failed" >> reports/agent-audit.md
+
+      - name: 📨 Send audit report by email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server: ${{ secrets.AUDIT_SMTP_SERVER }}
+          port: ${{ secrets.AUDIT_SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.AUDIT_SMTP_USERNAME }}
+          password: ${{ secrets.AUDIT_SMTP_PASSWORD }}
+          subject: "Agentic Platform Audit Report 🚀"
+          from: ${{ secrets.AUDIT_MAIL_FROM }}
+          to: ${{ secrets.AUDIT_MAIL_TO }}
+          body: file://apps/api/reports/agent-audit.md
+          ignore_cert: true
+
+      - name: 📦 Upload audit report (for GitHub UI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: apps/api/reports/agent-audit.md

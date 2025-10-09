@@ -1,0 +1,66 @@
+name: Agentic Platform Audit
+
+on:
+  schedule:
+    - cron: '0 */8 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build API application
+        run: pnpm build
+        working-directory: apps/api
+
+      - name: Build Web application
+        run: pnpm build
+        working-directory: apps/web
+
+      - name: Prepare reports directory
+        run: mkdir -p reports
+
+      - name: Run diagnostics (Markdown)
+        run: pnpm exec node reporter/agentic-audit.mjs --format markdown > reports/agent-audit.md
+
+      - name: Run diagnostics (JSON)
+        run: pnpm exec node reporter/agentic-audit.mjs --format json > reports/agent-audit.json
+
+      - name: Publish audit summary
+        run: cat reports/agent-audit.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Send audit email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.AUDIT_SMTP_SERVER }}
+          server_port: ${{ secrets.AUDIT_SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.AUDIT_SMTP_USERNAME }}
+          password: ${{ secrets.AUDIT_SMTP_PASSWORD }}
+          subject: Agentic Platform Audit Report
+          from: ${{ secrets.AUDIT_MAIL_FROM }}
+          to: ${{ secrets.AUDIT_MAIL_TO }}
+          body: file://reports/agent-audit.md
+          attachments: |
+            reports/agent-audit.md
+            reports/agent-audit.json
