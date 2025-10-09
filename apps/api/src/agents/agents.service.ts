@@ -2,9 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
 
-type AgentCreateArgs = Parameters<
-  PrismaService['prototype']['agent']['create']
->[0]
+type AgentCreateArgs = Parameters<PrismaService['agent']['create']>[0]
 
 type AgentCreateData = AgentCreateArgs extends { data: infer T }
   ? T
@@ -38,6 +36,8 @@ type AgentSummaryRow = {
   instructions: string | null
 }
 
+type AgentSummaryWithType = AgentSummaryRow & { type: AgentType }
+
 @Injectable()
 export class AgentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,11 +59,13 @@ export class AgentsService {
     return this.prisma.agent.create({ data })
   }
 
-  listAgents() {
-    return this.prisma.agent.findMany({
+  async listAgents(): Promise<AgentSummaryWithType[]> {
+    const agents = await this.prisma.agent.findMany({
       select: AGENT_SUMMARY_SELECT,
       orderBy: { name: 'asc' }
     })
+
+    return agents.map((agent) => ({ ...agent, type: inferAgentType(agent) }))
   }
 
   async getAgent(id: string) {
@@ -84,7 +86,7 @@ export class AgentsService {
       throw new NotFoundException('Agent not found')
     }
 
-    return agent
+    return { ...agent, type: inferAgentType(agent) }
   }
 
   async updateAgentAgentKitMetadata(
