@@ -1,23 +1,22 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   Post,
-  Query
+  Query,
+  UploadedFile,
+  UseInterceptors
 } from '@nestjs/common';
-import { AgentEvalService } from './agent-eval.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AgentRunnerService } from './agent-runner.service';
-import { AgentTraceService } from './tracing/agent-trace.service';
+import { AgentUploadService, AgentUploadFile } from './agent-upload.service';
 
 @Controller('agents/:id')
 export class AgentRunController {
   constructor(
     private readonly runnerService: AgentRunnerService,
-    private readonly evalService: AgentEvalService,
-    private readonly traceService: AgentTraceService
+    private readonly uploadService: AgentUploadService
   ) {}
 
   @Post('run')
@@ -33,6 +32,12 @@ export class AgentRunController {
     }
 
     return this.runnerService.run(id, payload);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAndRun(@Param('id') id: string, @UploadedFile() file: AgentUploadFile) {
+    return this.uploadService.handleUpload(id, file);
   }
 
   @Get('traces')

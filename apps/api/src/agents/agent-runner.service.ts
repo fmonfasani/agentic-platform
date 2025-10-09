@@ -11,6 +11,17 @@ type RunAgentDto = {
   metadata?: Record<string, unknown>
 }
 
+type ToolCall = {
+  id: string
+  name: string
+  input: Record<string, unknown>
+}
+
+type RunAgentOptions = {
+  existingTraceId?: string
+  runId?: string
+}
+
 @Injectable()
 export class AgentRunnerService {
   constructor(
@@ -19,20 +30,17 @@ export class AgentRunnerService {
     private readonly traceService: AgentTraceService
   ) {}
 
-  async run(agentId: string, payload: RunAgentDto) {
+  async run(agentId: string, payload: RunAgentDto, options?: RunAgentOptions) {
+    const client = this.ensureClient()
+
     const agent = await this.agentsService.getAgent(agentId)
     const inputMessages = this.normalizeMessages(payload, agent.instructions)
-    const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-    const assistantMessage = this.createAssistantMessage(agent.name, agent.area)
-    const transcript = [...inputMessages, assistantMessage]
+    const runId = options?.runId ?? `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    const trace = options?.existingTraceId
+      ? await this.traceService.updateTraceInput(options.existingTraceId, runId, inputMessages)
+      : await this.traceService.createTrace(agentId, runId, inputMessages)
 
-    const serialize = (value: unknown) => {
-      try {
-        return JSON.stringify(value)
-      } catch {
-        return null
-      }
-    }
+    const tools = this.buildToolDefinitions(agentId)
 
     const traceRecord = await this.prisma.agentTrace.create({
       data: {
