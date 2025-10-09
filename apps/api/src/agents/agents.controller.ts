@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post } from '@nestjs/common'
 import { AgentRunnerService } from './agent-runner.service'
 import { AgentsService } from './agents.service'
 
@@ -7,13 +7,18 @@ export class AgentsController {
   constructor(private readonly agentsService: AgentsService, private readonly runnerService: AgentRunnerService) {}
 
   @Get()
-  findAll() {
-    return this.agentsService.listAgents()
+  getAll() {
+    return this.agentsService.findAll()
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.agentsService.getAgent(id)
+  getById(@Param('id') id: string) {
+    return this.agentsService.findOne(id)
+  }
+
+  @Post()
+  create(@Body() data: any) {
+    return this.agentsService.create(data)
   }
 
   @Post(':id/chat-session')
