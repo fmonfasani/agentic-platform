@@ -11,6 +11,13 @@ import { MetricsService } from './metrics/metrics.service'
 
 @Module({
   controllers: [AgentsController, AgentRunController, MetricsController],
-  providers: [AgentsService, MetricsService, AgentRunnerService, AgentTraceService, AgentEvalService, PrismaService]
+  providers: [
+    AgentsService,
+    MetricsService,
+    AgentRunnerService,
+    AgentTraceService,
+    AgentEvalService,
+    PrismaService
+  ]
 })
 export class AgentsModule {}
