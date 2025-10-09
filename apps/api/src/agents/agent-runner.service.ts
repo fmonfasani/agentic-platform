@@ -56,7 +56,7 @@ export class AgentRunnerService {
       ...traceRecord,
       input: inputMessages,
       output: transcript
-    })
+    }
 
     const evaluation = await this.evalService.evaluateTrace(finalTrace.id)
 
