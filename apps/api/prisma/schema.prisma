@@ -5,7 +5,6 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -16,48 +15,22 @@ datasource db {
 // ===================================================
 
 model Agent {
-  id            String        @id @default(uuid())
+  id            String   @id @default(uuid())
   name          String
-  type          String        @default("Analyst")
   area          String
   description   String?
-  uses          Int           @default(0)
-  downloads     Int           @default(0)
-  rewards       Int           @default(0)
-  stars         Float         @default(0)
-  votes         Int           @default(0)
+  uses          Int      @default(0)
+  downloads     Int      @default(0)
+  rewards       Int      @default(0)
+  stars         Float    @default(0)
+  votes         Int      @default(0)
   openaiAgentId String?
-  model         String?       @default("gpt-4.1-mini")
+  model         String?  @default("gpt-4.1-mini")
   instructions  String?
-  updatedAt     DateTime      @updatedAt
-  usages        AgentUsage[]
-  traces        AgentTrace[]
-  workflows     Workflow[]
-}
+  updatedAt     DateTime @updatedAt
 
-model AgentUsage {
-  id        String   @id @default(uuid())
-  agentId   String
-  action    String
-  value     Float?
-  createdAt DateTime @default(now())
-
-  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-
-  @@index([agentId])
-}
-
-model Workflow {
-  id        String   @id @default(uuid())
-  name      String
-  status    String   @default("ready")
-  model     String   @default("gpt-4o")
-  platform  String   @default("OpenAI")
-  action    String?
-  value     Float?
-  agentId   String
-  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  traces    AgentTrace[]
+  workflows Workflow[]
 }
 
 model AgentTrace {
@@ -71,5 +44,18 @@ model AgentTrace {
   input     String?
   output    String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model Workflow {
+  id        String   @id @default(uuid())
+  name      String
+  status    String   @default("ready")
+  model     String   @default("gpt-4o")
+  platform  String   @default("OpenAI")
+  agentId   String
   agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

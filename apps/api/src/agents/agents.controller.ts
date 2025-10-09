@@ -1,35 +1,33 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
-import { AgentRunnerService, AgentRunPayload } from './agent-runner.service'
-import { AgentsService } from './agents.service'
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { AgentRunnerService } from './agent-runner.service';
+import { AgentsService } from './agents.service';
+
+type CreateAgentDto = Parameters<AgentsService['create']>[0];
 
 @Controller('agents')
 export class AgentsController {
-  constructor(private readonly agentsService: AgentsService, private readonly runnerService: AgentRunnerService) {}
+  constructor(
+    private readonly agentsService: AgentsService,
+    private readonly runnerService: AgentRunnerService,
+  ) {}
 
   @Get()
-  findAll() {
-    return this.agentsService.listAgents()
+  getAll() {
+    return this.agentsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.agentsService.getAgent(id)
+  getById(@Param('id') id: string) {
+    return this.agentsService.findOne(id);
   }
 
-  @Get(':id/traces')
-  listTraces(@Param('id') id: string, @Query('take') take?: string) {
-    const parsed = take ? Number.parseInt(take, 10) : NaN
-    const amount = Number.isNaN(parsed) ? undefined : parsed
-    return this.runnerService.listTraces(id, amount)
-  }
-
-  @Post(':id/run')
-  runAgent(@Param('id') id: string, @Body() payload: AgentRunPayload) {
-    return this.runnerService.run(id, payload)
+  @Post()
+  create(@Body() data: CreateAgentDto) {
+    return this.agentsService.create(data);
   }
 
   @Post(':id/chat-session')
   createChatSession(@Param('id') id: string) {
-    return this.runnerService.createChatSession(id)
+    return this.runnerService.createChatSession(id);
   }
 }
