@@ -7,7 +7,6 @@ const TRACE_SELECT = {
   runId: true,
   status: true,
   grade: true,
-  feedback: true,
   evaluator: true,
   traceUrl: true,
   input: true,
@@ -33,12 +32,25 @@ export class AgentTraceService {
       .then((trace) => this.deserialize(trace))
   }
 
+  updateTraceInput(id: string, runId: string, input: unknown) {
+    return this.prisma.agentTrace
+      .update({
+        where: { id },
+        data: {
+          runId,
+          status: 'pending',
+          input: this.stringify(input)
+        },
+        select: TRACE_SELECT
+      })
+      .then((trace) => this.deserialize(trace))
+  }
+
   completeTrace(
     id: string,
     data: Partial<{
       status: string
       grade: number | null
-      feedback: string | null
       evaluator: string | null
       traceUrl: string | null
       output: unknown
@@ -47,7 +59,6 @@ export class AgentTraceService {
     const updateData = {
       status: data.status,
       grade: data.grade,
-      feedback: data.feedback,
       evaluator: data.evaluator,
       traceUrl: data.traceUrl,
       output: data.output !== undefined ? this.stringify(data.output) : undefined
@@ -112,7 +123,6 @@ type TraceRecord = {
   runId: string
   status: string
   grade: number | null
-  feedback: string | null
   evaluator: string | null
   traceUrl: string | null
   input: string | null
