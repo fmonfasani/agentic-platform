@@ -1,10 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { Clock, Gauge, Link2, Loader2, Mic, Paperclip, Presentation, RotateCcw, Video, Workflow } from 'lucide-react'
 import AgentModal from './AgentModal'
 import { API_BASE_URL, OPENAI_CAPABILITIES } from '../lib/config'
 import type { AgentCardData } from './AgentCard'
+import { PdfUploadSummary } from './PdfUploadSummary'
 
 const capabilityPalette = ['bg-sky-500/20 text-sky-200', 'bg-emerald-500/20 text-emerald-200', 'bg-teal-500/20 text-teal-200', 'bg-violet-500/20 text-violet-200']
 
@@ -37,6 +39,7 @@ type AgentTrace = {
   evaluator?: string | null
   grade?: number | null
   summary?: string | null
+  output?: unknown
 }
 
 type ConversationMessage = {
@@ -59,6 +62,10 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
   const [input, setInput] = useState('')
   const [isRunning, setIsRunning] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const formattedCapabilities = useMemo(() => OPENAI_CAPABILITIES.map((cap, index) => ({
     label: cap,
@@ -72,6 +79,8 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
     setConversation([])
     setInput('')
     setError(null)
+    setUploadSuccess(null)
+    setUploadError(null)
   }, [])
 
   const fetchTraces = useCallback(async (agentId: string) => {
@@ -180,6 +189,47 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
     }
   }, [agent, input, fetchTraces])
 
+  const handleFileUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      if (!agent) return
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setUploadSuccess(null)
+      setUploadError(null)
+      setIsUploading(true)
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/agents/${agent.id}/upload`, {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || 'No se pudo generar el informe a partir del archivo cargado')
+        }
+
+        setUploadSuccess('Informe generado correctamente')
+        fetchTraces(agent.id)
+      } catch (err) {
+        console.error('Error al subir el informe', err)
+        setUploadError(
+          err instanceof Error ? err.message : 'Ocurrió un error inesperado al subir el informe'
+        )
+      } finally {
+        setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }
+    },
+    [agent, fetchTraces]
+  )
+
   const metricsCards = useMemo(() => {
     if (!metrics) return []
 
@@ -254,7 +304,7 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
               {detail.instructions && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Instrucciones Base</p>
-                  <p className="mt-1 text-sm text-white/65 whitespace-pre-line">{detail.instructions}</p>
+                  <p className="mt-1 text-sm text-white/[0.65] whitespace-pre-line">{detail.instructions}</p>
                 </div>
               )}
             </article>
@@ -302,13 +352,16 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
             </div>
             <button
               onClick={() => agent && fetchTraces(agent.id)}
-              className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-300/60 hover:text-emerald-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:border-emerald-300/60 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
+              disabled={isUploading}
             >
               <RotateCcw className="h-4 w-4" />
               Actualizar registros
             </button>
           </header>
+
+          <PdfUploadSummary agentId={agent?.id ?? null} onCompleted={() => agent && fetchTraces(agent.id)} />
 
           <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
             {conversation.length === 0 && (
@@ -333,24 +386,55 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
             ))}
           </div>
 
+          {uploadSuccess && (
+            <div className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">
+              {uploadSuccess}
+            </div>
+          )}
+          {uploadError && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-200">
+              {uploadError}
+            </div>
+          )}
+
           <div className="space-y-3">
             <textarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
               placeholder="Ingrese su consulta o instrucciones…"
               rows={3}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/70 focus:outline-none"
+              disabled={isUploading}
+              className="w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/70 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-900/40 disabled:text-white/40"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2 text-xs">
-                <ActionChip icon={<Paperclip className="h-4 w-4" />} label="Adjuntar Archivo" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/60 transition hover:border-white/20 hover:text-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-emerald-300/80" />
+                  ) : (
+                    <Paperclip className="h-4 w-4 text-emerald-300/80" />
+                  )}
+                  Subir informe PDF
+                </button>
                 <ActionChip icon={<Mic className="h-4 w-4" />} label="Entrada de Voz" />
                 <ActionChip icon={<Video className="h-4 w-4" />} label="Adjuntar Video" />
                 <ActionChip icon={<Link2 className="h-4 w-4" />} label="Adjuntar Enlace" />
               </div>
               <button
                 type="button"
-                disabled={isRunning || !input.trim()}
+                disabled={isRunning || isUploading || !input.trim()}
                 onClick={handleRun}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/40"
               >
@@ -365,31 +449,77 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
           <section className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-white/60">Últimas ejecuciones</h3>
             <div className="grid gap-3">
-              {traces.map((trace) => (
-                <div key={trace.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
-                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                      {trace.status}
-                    </span>
-                    <span>{new Date(trace.createdAt).toLocaleString()}</span>
+              {traces.map((trace) => {
+                const summary = extractTraceSummary(trace)
+
+                return (
+                  <div key={trace.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
+                      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                        {trace.status}
+                      </span>
+                      <span>{new Date(trace.createdAt).toLocaleString()}</span>
+                    </div>
+                    {summary && <p className="mt-2 whitespace-pre-line text-white/70">{summary}</p>}
+                    <div className="mt-2 text-[11px] text-white/40">
+                      {trace.grade !== null && trace.grade !== undefined
+                        ? `Evaluación • ${(trace.grade * 100).toFixed(0)}%`
+                        : 'Sin evaluación automática registrada'}
+                    </div>
+                    {trace.evaluator && (
+                      <p className="text-[11px] text-white/40">Evaluador: {trace.evaluator}</p>
+                    )}
                   </div>
-                  {trace.summary && <p className="mt-2 text-white/70">{trace.summary}</p>}
-                  <div className="mt-2 text-[11px] text-white/40">
-                    {trace.grade !== null && trace.grade !== undefined
-                      ? `Evaluación • ${(trace.grade * 100).toFixed(0)}%`
-                      : 'Sin evaluación automática registrada'}
-                  </div>
-                  {trace.evaluator && (
-                    <p className="text-[11px] text-white/40">Evaluador: {trace.evaluator}</p>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}
       </div>
     </AgentModal>
   )
+}
+
+function extractTraceSummary(trace: AgentTrace) {
+  if (trace.summary) {
+    return trace.summary
+  }
+
+  const output = trace.output as any
+
+  if (!output) {
+    return null
+  }
+
+  if (typeof output === 'string') {
+    return output
+  }
+
+  if (Array.isArray(output)) {
+    return output
+      .map((item) => {
+        if (!item) return ''
+        if (typeof item === 'string') return item
+        if (typeof item === 'object' && 'content' in item && typeof item.content === 'string') {
+          return item.content
+        }
+        return ''
+      })
+      .filter((value) => value.trim().length > 0)
+      .join('\n')
+  }
+
+  if (typeof output === 'object') {
+    if (typeof (output as { summary?: string }).summary === 'string') {
+      return (output as { summary: string }).summary
+    }
+
+    if (typeof (output as { message?: string }).message === 'string') {
+      return (output as { message: string }).message
+    }
+  }
+
+  return null
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
