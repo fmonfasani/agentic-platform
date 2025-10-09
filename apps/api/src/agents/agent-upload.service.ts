@@ -3,16 +3,12 @@ import {
   Injectable,
   UnsupportedMediaTypeException
 } from '@nestjs/common'
+import type { Express } from 'express'
 import { pdf as parsePdf } from 'pdf-parse'
 import { AgentRunnerService } from './agent-runner.service'
 import { AgentTraceService } from './tracing/agent-trace.service'
 
-export type AgentUploadFile = {
-  buffer: Buffer
-  originalname: string
-  mimetype: string
-  size: number
-}
+export type AgentUploadFile = Express.Multer.File
 
 @Injectable()
 export class AgentUploadService {
@@ -20,6 +16,10 @@ export class AgentUploadService {
     private readonly runnerService: AgentRunnerService,
     private readonly traceService: AgentTraceService
   ) {}
+
+  processFinancialReport(agentId: string, file: AgentUploadFile) {
+    return this.handleUpload(agentId, file)
+  }
 
   async handleUpload(agentId: string, file?: AgentUploadFile) {
     if (!file) {

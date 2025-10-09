@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { AgentsService } from './agents.service'
 import { AgentTraceService, AgentTraceSummary } from './tracing/agent-trace.service'
-import { PrismaService } from '../prisma/prisma.service'
+import { AgentEvalService } from './agent-eval.service'
 
 type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
@@ -26,13 +26,14 @@ type RunAgentOptions = {
 export class AgentRunnerService {
   constructor(
     private readonly agentsService: AgentsService,
-    private readonly prisma: PrismaService,
-    private readonly traceService: AgentTraceService
+    private readonly traceService: AgentTraceService,
+    private readonly evalService: AgentEvalService
   ) {}
 
-  async run(agentId: string, payload: RunAgentDto, options?: RunAgentOptions) {
-    const client = this.ensureClient()
+  private client: { agents?: { create?: (input: unknown) => Promise<{ id: string }> } } | null = null
+  private readonly defaultModel = 'gpt-4o-mini'
 
+  async run(agentId: string, payload: RunAgentDto, options?: RunAgentOptions) {
     const agent = await this.agentsService.getAgent(agentId)
     const inputMessages = this.normalizeMessages(payload, agent.instructions)
     const runId = options?.runId ?? `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
@@ -40,27 +41,17 @@ export class AgentRunnerService {
       ? await this.traceService.updateTraceInput(options.existingTraceId, runId, inputMessages)
       : await this.traceService.createTrace(agentId, runId, inputMessages)
 
-    const tools = this.buildToolDefinitions(agentId)
+    const assistantMessage = this.createAssistantMessage(agent.name, agent.area)
+    const transcript = [...inputMessages, assistantMessage]
 
-    const traceRecord = await this.prisma.agentTrace.create({
-      data: {
-        agentId,
-        runId,
-        status: 'completed',
-        input: serialize(inputMessages),
-        output: serialize(transcript)
-      }
-    })
-
-    const trace: AgentTraceSummary = {
-      ...traceRecord,
-      input: inputMessages,
+    const finalTrace = await this.traceService.completeTrace(trace.id, {
+      status: 'completed',
       output: transcript
     })
 
     const evaluation = await this.evalService.evaluateTrace(finalTrace.id)
 
-    const traceWithEvaluation = evaluation
+    const traceWithEvaluation: AgentTraceSummary = evaluation
       ? {
           ...finalTrace,
           grade: evaluation.grade,
@@ -75,7 +66,7 @@ export class AgentRunnerService {
       agentId,
       message: assistantMessage.content,
       transcript,
-      trace
+      trace: traceWithEvaluation
     }
   }
 
@@ -106,6 +97,11 @@ export class AgentRunnerService {
     }
 
     return this.client
+  }
+
+  private buildToolDefinitions(agentId: string): Record<string, unknown>[] {
+    void agentId
+    return []
   }
 
   private async ensureAgentRegistration(
