@@ -66,6 +66,7 @@ model AgentTrace {
   runId     String
   status    String
   grade     Float?
+  feedback  String?
   evaluator String?
   traceUrl  String?
   input     String?
