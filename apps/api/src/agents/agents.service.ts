@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { inferAgentType, AgentType } from './agent-type'
 import { PrismaService } from '../prisma/prisma.service'
 
 const AGENT_SUMMARY_SELECT = {
@@ -47,7 +47,7 @@ export class AgentsService {
     })
   }
 
-  async create(data: any) {
+  async create(data: Record<string, unknown>) {
     return this.prisma.agent.create({ data })
   }
 
