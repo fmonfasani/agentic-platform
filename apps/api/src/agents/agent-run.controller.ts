@@ -21,6 +21,7 @@ export class AgentRunController {
   ) {}
 
   @Post('run')
+  @HttpCode(HttpStatus.CREATED)
   async runAgent(
     @Param('id') id: string,
     @Body() body: Parameters<AgentRunnerService['run']>[1]

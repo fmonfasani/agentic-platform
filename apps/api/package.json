@@ -7,7 +7,9 @@
     "start:prod": "node dist/main.js",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "dev": "ts-node src/main.ts"
+    "dev": "ts-node src/main.ts",
+    "seed": "pnpm prisma db push && pnpm prisma db seed",
+    "test:report": "bash -c 'set -o pipefail && pnpm exec jest --config jest.config.ts 2>&1 | tee ../../reports/tests-day1.md'"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.8",
