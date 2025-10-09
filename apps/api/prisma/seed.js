@@ -11,7 +11,6 @@ const agentsData = [
     area: 'Infraestructura y Radiocomunicaciones',
     description:
       'Supervisa la infraestructura técnica y coordina tareas de radiocomunicaciones para garantizar la cobertura nacional.',
-    type: 'technical',
     workflows: [
       {
         id: 'wf-analista-tecnico-1',
@@ -35,7 +34,6 @@ const agentsData = [
     area: 'Gestión Presupuestaria',
     description:
       'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos del ENACOM.',
-    type: 'financial',
     workflows: [
       {
         id: 'wf-analista-financiero-1',
@@ -52,7 +50,6 @@ const agentsData = [
     area: 'Gestión de Licencias y Autorizaciones',
     description:
       'Evalúa solicitudes de licencias TIC y asesora a los actores en el cumplimiento regulatorio.',
-    type: 'regulatory',
     workflows: [
       {
         id: 'wf-analista-licencias-1',
@@ -69,7 +66,6 @@ const agentsData = [
     area: 'Dirección General',
     description:
       'Automatiza la redacción de informes ejecutivos con datos actualizados y visualizaciones.',
-    type: 'reporting',
     workflows: [
       {
         id: 'wf-generador-informes-1',
@@ -86,7 +82,6 @@ const agentsData = [
     area: 'Auditoría Interna',
     description:
       'Identifica riesgos operativos y sugiere medidas de mitigación en los procesos críticos del organismo.',
-    type: 'risk',
     workflows: [
       {
         id: 'wf-analista-riesgo-1',
@@ -128,7 +123,6 @@ async function main() {
       data: {
         id: agent.id,
         name: agent.name,
-        type: agent.type,
         area: agent.area,
         description: agent.description,
         uses,
