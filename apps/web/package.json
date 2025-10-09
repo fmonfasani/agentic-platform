@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "jest --config jest.config.ts",
     "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo"
   },
   "dependencies": {
