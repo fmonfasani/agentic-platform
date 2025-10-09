@@ -1,7 +1,16 @@
-import { Controller, HttpStatus, Param, Post, UploadedFile, UseInterceptors, ParseFilePipeBuilder } from '@nestjs/common'
+import {
+  Controller,
+  HttpStatus,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipeBuilder
+} from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import multer from 'multer'
 import { AgentUploadService } from './agent-upload.service'
+import type { Express } from 'express'
 
 @Controller('agents/:id')
 export class AgentUploadController {
