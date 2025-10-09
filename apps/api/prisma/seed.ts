@@ -32,26 +32,26 @@ async function main() {
         votes: randomInt(8, 70)
       },
       {
-        name: 'Gestor Regulatorio',
-        description:
-          'Monitorea cambios normativos y prepara respuestas para garantizar el cumplimiento regulatorio.',
-        area: 'Cumplimiento Normativo',
-        uses: randomInt(90, 400),
-        downloads: randomInt(30, 150),
-        rewards: randomInt(3, 18),
-        stars: randomStars(),
-        votes: randomInt(5, 60)
+        name: 'Gestión Regulatoria',
+        type: 'regulatory',
+        description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
+        area: 'Gestión Regulatoria y Licencias',
+        uses: 58,
+        downloads: 24,
+        rewards: 6,
+        stars: 4.3,
+        votes: 42
       },
       {
         name: 'Reportes e Informes',
-        description:
-          'Automatiza la consolidación de KPIs y genera informes ejecutivos para distintos equipos.',
-        area: 'Inteligencia de Negocio',
-        uses: randomInt(110, 450),
-        downloads: randomInt(35, 160),
-        rewards: randomInt(4, 22),
-        stars: randomStars(),
-        votes: randomInt(7, 75)
+        type: 'reporting',
+        description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
+        area: 'Reportes e Informes Institucionales',
+        uses: 87,
+        downloads: 33,
+        rewards: 11,
+        stars: 4.6,
+        votes: 73
       }
     ]
   });
