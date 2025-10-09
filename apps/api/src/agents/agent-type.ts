@@ -1,25 +1,25 @@
 export enum AgentType {
-  Default = 'default'
+  Default = 'default',
 }
 
 export type AgentLike = {
-  category?: string | null
-  metadata?: Record<string, unknown> | null
-}
+  category?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
 export function inferAgentType(agent?: AgentLike | null): AgentType {
   if (!agent) {
-    return AgentType.Default
+    return AgentType.Default;
   }
 
-  const category = agent.category ?? (agent.metadata?.category as string | undefined)
+  const category = agent.category ?? (agent.metadata?.category as string | undefined);
 
   if (category && typeof category === 'string') {
-    const normalized = category.toLowerCase()
-    if (Object.values(AgentType).includes(normalized as AgentType)) {
-      return normalized as AgentType
+    const normalized = category.toLowerCase();
+    if ((Object.values(AgentType) as string[]).includes(normalized)) {
+      return normalized as AgentType;
     }
   }
 
-  return AgentType.Default
+  return AgentType.Default;
 }
