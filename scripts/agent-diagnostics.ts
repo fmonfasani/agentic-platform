@@ -182,20 +182,17 @@ const webTestResult = runCommand('Web test suite', WEB_TEST_COMMAND)
 const timestamp = new Date().toISOString()
 const apiStatus: ApiStatus = healthProbeResult.exitCode === 0 ? 'online' : 'offline'
 
-const summary = {
-  timestamp,
-  apiStatus,
-  healthProbe: healthProbeResult,
-  apiTests: apiTestResult,
-  webTests: webTestResult,
+  const output = shouldOutputJson ? renderJson(results) : renderMarkdown(results);
+  process.stdout.write(output);
+
+  const hasFailures = results.some((result) => result.status !== 'passed');
+  if (hasFailures) {
+    console.error('One or more diagnostics checks did not pass.');
+    process.exitCode = 1;
+  }
 }
 
-if (useJson) {
-  printJson(summary)
-} else {
-  printMarkdown(summary)
-}
-
-if ([healthProbeResult, apiTestResult, webTestResult].some((result) => result.exitCode !== 0)) {
-  process.exitCode = 1
-}
+main().catch((error) => {
+  console.error('Failed to run diagnostics:', error);
+  process.exitCode = process.exitCode && process.exitCode !== 0 ? process.exitCode : 1;
+});
