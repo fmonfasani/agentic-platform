@@ -44,7 +44,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const res = await fetch('/api/dashboard/leaderboard')
+        const res = await fetch('/api/dashboard/leaderboard', { cache: 'no-store' })
         if (!res.ok) throw new Error('Error al obtener el ranking de agentes')
         const json = (await res.json()) as LeaderboardResponse
         setData(json)
