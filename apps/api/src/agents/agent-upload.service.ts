@@ -12,7 +12,7 @@ export type AgentUploadFile = Express.Multer.File;
 
 type PdfParser = (data: Buffer | Uint8Array, options?: unknown) => Promise<{ text?: string }>
 
-const parsePdfBuffer = parsePdf as unknown as PdfParser
+const parsePdfBuffer: PdfParser = (data, options) => parsePdf(data, options)
 
 @Injectable()
 export class AgentUploadService {
