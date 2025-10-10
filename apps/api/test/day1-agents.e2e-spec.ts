@@ -73,29 +73,25 @@ describe('Agents API Day 1 flows (e2e)', () => {
       id: 'agent-analyst-1',
       name: 'Analista Técnico',
       area: 'Infraestructura y despliegues',
-      description: 'Procesa informes técnicos',
-      type: 'technical'
+      description: 'Procesa informes técnicos'
     },
     {
       id: 'agent-analyst-2',
       name: 'Analista Financiero',
       area: 'Presupuesto y contabilidad',
-      description: 'Evalúa datos contables y presupuestarios',
-      type: 'financial'
+      description: 'Evalúa datos contables y presupuestarios'
     },
     {
       id: 'agent-analyst-3',
       name: 'Analista de Licencias',
       area: 'Gestión de licencias',
-      description: 'Controla los permisos y autorizaciones',
-      type: 'regulatory'
+      description: 'Controla los permisos y autorizaciones'
     },
     {
       id: 'agent-analyst-4',
       name: 'Analista Estratégico',
       area: 'Planeamiento y regulación',
-      description: 'Integra datos para reportes ejecutivos',
-      type: 'strategic'
+      description: 'Integra datos para reportes ejecutivos'
     }
   ]
 
