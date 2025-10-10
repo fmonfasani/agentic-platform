@@ -33,7 +33,7 @@ const agentsData = [
     name: 'Analista Financiero',
     area: 'Gestión Presupuestaria',
     description:
-      'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos del ENACOM.',
+      'Administra proyecciones financieras y seguimiento presupuestario para programas estratégicos .',
     workflows: [
       {
         id: 'wf-analista-financiero-1',
