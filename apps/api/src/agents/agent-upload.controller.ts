@@ -10,7 +10,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import multer from 'multer';
 import { AgentUploadService } from './agent-upload.service';
-import type { Express } from 'express';
+import type { AgentUploadFile } from './agent-upload.service';
 
 @Controller('agents/:id')
 export class AgentUploadController {
@@ -30,7 +30,7 @@ export class AgentUploadController {
         .addMaxSizeValidator({ maxSize: 10 * 1024 * 1024 })
         .build({ errorHttpStatusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE }),
     )
-    file: Express.Multer.File,
+    file: AgentUploadFile,
   ) {
     return this.uploadService.processFinancialReport(agentId, file);
   }

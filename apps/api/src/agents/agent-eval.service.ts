@@ -43,14 +43,22 @@ export class AgentEvalService {
 
   constructor(private prisma: PrismaService) {
     const apiKey = process.env.OPENAI_API_KEY
-    if (apiKey) {
-      this.openai = new OpenAI({
-        apiKey,
-        organization: process.env.OPENAI_ORG_ID,
-        project: process.env.OPENAI_PROJECT_ID
-      })
-    } else {
+    if (!apiKey) {
+      console.warn('⚠️ Missing OPENAI_API_KEY — OpenAI client disabled.')
+      this.logger.warn('OPENAI_API_KEY is not configured. Auto-evaluation will be skipped.')
       this.openai = null
+    } else {
+      try {
+        this.openai = new OpenAI({
+          apiKey,
+          organization: process.env.OPENAI_ORG_ID,
+          project: process.env.OPENAI_PROJECT_ID
+        })
+      } catch (error) {
+        console.warn('⚠️ Missing OPENAI_API_KEY — OpenAI client disabled.')
+        this.logger.error('Failed to initialize the OpenAI client. Auto-evaluation will be skipped.', error as Error)
+        this.openai = null
+      }
     }
 
     this.template = this.resolveTemplate(process.env.OPENAI_EVAL_TEMPLATE)
