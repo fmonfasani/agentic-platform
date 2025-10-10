@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import OpenAI from 'openai'
+import type { EvalCreateParams } from 'openai/resources/evals/evals'
 import { PrismaService } from '../prisma/prisma.service'
 
 type EvalTemplateConfig = Record<string, any>
@@ -40,6 +41,8 @@ export class AgentEvalService {
   private readonly template: EvalTemplateConfig | null
   private readonly pollInterval: number
   private readonly pollTimeout: number
+  private readonly graderModel: string
+  private readonly passThreshold: number
 
   constructor(private prisma: PrismaService) {
     const apiKey = process.env.OPENAI_API_KEY
@@ -64,6 +67,8 @@ export class AgentEvalService {
     this.template = this.resolveTemplate(process.env.OPENAI_EVAL_TEMPLATE)
     this.pollInterval = this.parseNumber(process.env.OPENAI_EVAL_POLL_INTERVAL, 2000)
     this.pollTimeout = this.parseNumber(process.env.OPENAI_EVAL_TIMEOUT, 120000)
+    this.graderModel = process.env.OPENAI_EVAL_GRADER_MODEL?.trim() || 'gpt-4o-mini'
+    this.passThreshold = this.parseNumber(process.env.OPENAI_EVAL_PASS_THRESHOLD, 0.7)
   }
 
   private async waitForEvalRunCompletion(openai: OpenAI, evalId: string, runId: string) {
@@ -109,28 +114,44 @@ export class AgentEvalService {
     }
 
     try {
-      const criteria = [
+      const criteriaDefinitions = [
         {
-          id: 'claridad_tecnica',
           name: 'Claridad técnica',
           description: 'Evalúa si la respuesta explica conceptos técnicos de forma clara y correcta.'
         },
         {
-          id: 'coherencia_institucional',
           name: 'Coherencia institucional',
           description: 'Verifica que el mensaje respete el tono y lineamientos institucionales del ENACOM.'
         },
         {
-          id: 'nivel_detalle',
           name: 'Nivel de detalle',
           description: 'Analiza si la respuesta ofrece el nivel de profundidad adecuado para el pedido.'
         },
         {
-          id: 'precision_datos',
           name: 'Precisión en los datos',
           description: 'Confirma que los datos aportados sean correctos y estén bien fundamentados.'
         }
       ]
+
+      const testingCriteria: EvalCreateParams['testing_criteria'] = criteriaDefinitions.map(
+        ({ name, description }) => ({
+          type: 'score_model',
+          name,
+          model: this.graderModel,
+          pass_threshold: this.passThreshold,
+          range: [0, 1],
+          input: [
+            {
+              role: 'system',
+              content: `Eres un evaluador imparcial. Analiza la respuesta del asistente y asigna una puntuación entre 0 y 1 para el criterio "${name}". ${description}`
+            },
+            {
+              role: 'user',
+              content: 'Prompt del usuario:\n{{item.prompt}}\n\nRespuesta del asistente:\n{{item.completion}}'
+            }
+          ]
+        })
+      )
       const evaluation = await openai.evals.create({
         name: `trace-${traceId}-${Date.now()}`,
         data_source_config: {
@@ -147,7 +168,7 @@ export class AgentEvalService {
           },
           include_sample_schema: true
         },
-        testing_criteria: criteria
+        testing_criteria: testingCriteria
       } as any)
 
       const run = await openai.evals.runs.create(evaluation.id, {
