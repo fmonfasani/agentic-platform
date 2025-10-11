@@ -8,6 +8,7 @@ const TRACE_SELECT = {
   status: true,
   grade: true,
   evaluator: true,
+  feedback: true,
   traceUrl: true,
   input: true,
   output: true,
@@ -142,6 +143,7 @@ type TraceRecord = {
   status: string
   grade: number | null
   evaluator: string | null
+  feedback: string | null
   traceUrl: string | null
   input: string | null
   output: string | null
