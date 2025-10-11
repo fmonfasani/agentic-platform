@@ -222,7 +222,6 @@ async function applySchema(prisma: PrismaService) {
     CREATE TABLE IF NOT EXISTS "Agent" (
       "id" TEXT PRIMARY KEY,
       "name" TEXT NOT NULL,
-      "type" TEXT NOT NULL DEFAULT 'Analyst',
       "area" TEXT NOT NULL,
       "description" TEXT,
       "uses" INTEGER NOT NULL DEFAULT 0,
