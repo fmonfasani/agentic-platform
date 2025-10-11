@@ -126,7 +126,7 @@ export class AgentEvalService {
       ]
 
       const testingCriteria: EvalCreateParams['testing_criteria'] = criteriaDefinitions.map(
-        ({ name, description }) => ({
+        ({ name, description }): EvalCreateParams.ScoreModel => ({
           type: 'score_model',
           name,
           model: this.graderModel,
@@ -135,10 +135,12 @@ export class AgentEvalService {
           input: [
             {
               role: 'system',
+              type: 'message',
               content: `Eres un evaluador imparcial. Analiza la respuesta del asistente y asigna una puntuación entre 0 y 1 para el criterio "${name}". ${description}`
             },
             {
               role: 'user',
+              type: 'message',
               content: 'Prompt del usuario:\n{{item.prompt}}\n\nRespuesta del asistente:\n{{item.completion}}'
             }
           ]
