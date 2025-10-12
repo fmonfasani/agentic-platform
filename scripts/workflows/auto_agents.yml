@@ -1,0 +1,31 @@
+name: Agentic Autopilot — Auto Agents
+on:
+  schedule:
+    - cron: "0 4 * * *"   # Todos los días a las 4 AM
+  workflow_dispatch: {}    # Permite ejecución manual desde GitHub Actions
+
+jobs:
+  run-autopilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Cargar variables de entorno
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+          echo "EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" >> $GITHUB_ENV
+          echo "EMAIL_APP_PASSWORD=${{ secrets.EMAIL_APP_PASSWORD }}" >> $GITHUB_ENV
+          echo "EMAIL_REPORTS_TO=${{ secrets.EMAIL_REPORTS_TO }}" >> $GITHUB_ENV
+          echo "GIT_REPO_URL=https://github.com/fmonfasani/argentic-platform.git" >> $GITHUB_ENV
+
+      - name: Ejecutar Autopilot Master
+        run: python scripts/agentic-autopilot/autopilot_master_v3.py
+
+      - name: Ejecutar Agentes Inteligentes
+        run: python scripts/agentic-autopilot/agent_autopilot.py

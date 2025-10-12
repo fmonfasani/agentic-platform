@@ -1,4 +1,4 @@
-<<<<<<< Updated upstream
+
 #!/usr/bin/env node
 const { spawnSync } = require('child_process');
 const runner = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -10,7 +10,7 @@ if (result.error) {
 }
 
 process.exit(result.status ?? 0);
-=======
+
 const { execSync } = require("child_process");
 
 console.log("🧩 Running Prisma generate...");
@@ -21,4 +21,3 @@ try {
   console.error("❌ Prisma generate failed:", e.message);
   process.exit(1);
 }
->>>>>>> Stashed changes
