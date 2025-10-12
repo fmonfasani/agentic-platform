@@ -1,0 +1,22 @@
+[
+  {
+    "name": "HealthMonitor",
+    "instructions": "Analiza los reportes del proyecto y detecta fallas técnicas, dependencias rotas o errores de CI.",
+    "model": "gpt-4-turbo"
+  },
+  {
+    "name": "ErrorAnalyzer",
+    "instructions": "Revisa los logs de errores y sugiere soluciones con pasos claros y referencias a documentación.",
+    "model": "gpt-4o-mini"
+  },
+  {
+    "name": "ReportSummarizer",
+    "instructions": "Convierte los reportes técnicos en resúmenes en lenguaje natural listos para enviar por email.",
+    "model": "gpt-4-turbo"
+  },
+  {
+    "name": "AgentCreator",
+    "instructions": "Evalúa el estado del proyecto y crea nuevos agentes con roles definidos según los patrones de mejora detectados.",
+    "model": "gpt-4-turbo-preview"
+  }
+]

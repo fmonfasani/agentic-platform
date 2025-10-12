@@ -1,0 +1,15 @@
+name: Auto Health Report
+on:
+  schedule:
+    - cron: "0 4 * * *"   # todos los días a las 4 AM
+  workflow_dispatch: {}    # ejecución manual
+jobs:
+  run-autopilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+      - name: Configurar entorno
+        run: pip install -r requirements.txt
+      - name: Ejecutar Autopilot Master
+        run: python scripts/agentic-autopilot/autopilot_master_v3.py

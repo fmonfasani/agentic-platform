@@ -1,0 +1,25 @@
+name: Agentic Autopilot
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"  # Cada 6 horas
+  workflow_dispatch:
+
+jobs:
+  autopilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo apt install -y tree
+          pip install openai
+
+      - name: Run Agentic Autopilot
+        run: |
+          python3 scripts/agentic-autopilot/agent_autopilot.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMAIL_REPORTS_TO: "amonfasani@gmail.com"
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
