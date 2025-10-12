@@ -172,27 +172,64 @@ function printJson(results: {
   console.log(JSON.stringify(payload, null, 2))
 }
 
-const args = process.argv.slice(2)
-const useJson = args.includes('--json')
+function hasFailures(results: DiagnosticsResults): boolean {
+  if (results.apiStatus === 'offline') {
+    return true
+  }
 
-const healthProbeResult = runCommand('API health probe', HEALTH_PROBE_COMMAND)
-const apiTestResult = runCommand('API test suite', API_TEST_COMMAND)
-const webTestResult = runCommand('Web test suite', WEB_TEST_COMMAND)
+  return [results.healthProbe, results.apiTests, results.webTests].some(
+    (result) => result.status === 'failed',
+  )
+}
 
-const timestamp = new Date().toISOString()
-const apiStatus: ApiStatus = healthProbeResult.exitCode === 0 ? 'online' : 'offline'
+interface DiagnosticsResults {
+  timestamp: string
+  apiStatus: ApiStatus
+  healthProbe: CommandResult
+  apiTests: CommandResult
+  webTests: CommandResult
+}
 
-  const output = shouldOutputJson ? renderJson(results) : renderMarkdown(results);
-  process.stdout.write(output);
+function collectResults(): DiagnosticsResults {
+  const healthProbeResult = runCommand('API health probe', HEALTH_PROBE_COMMAND)
+  const apiTestResult = runCommand('API test suite', API_TEST_COMMAND)
+  const webTestResult = runCommand('Web test suite', WEB_TEST_COMMAND)
 
-  const hasFailures = results.some((result) => result.status !== 'passed');
-  if (hasFailures) {
-    console.error('One or more diagnostics checks did not pass.');
-    process.exitCode = 1;
+  const timestamp = new Date().toISOString()
+  const apiStatus: ApiStatus = healthProbeResult.exitCode === 0 ? 'online' : 'offline'
+
+  return {
+    timestamp,
+    apiStatus,
+    healthProbe: healthProbeResult,
+    apiTests: apiTestResult,
+    webTests: webTestResult,
   }
 }
 
-main().catch((error) => {
-  console.error('Failed to run diagnostics:', error);
-  process.exitCode = process.exitCode && process.exitCode !== 0 ? process.exitCode : 1;
-});
+function main() {
+  const args = process.argv.slice(2)
+  const useJson = args.includes('--json')
+
+  const results = collectResults()
+
+  if (useJson) {
+    printJson(results)
+  } else {
+    printMarkdown(results)
+  }
+
+  if (hasFailures(results)) {
+    console.error('One or more diagnostics checks did not pass.')
+    process.exitCode = 1
+  }
+}
+
+try {
+  main()
+} catch (error) {
+  console.error('Failed to run diagnostics:', error)
+  if (!process.exitCode || process.exitCode === 0) {
+    process.exitCode = 1
+  }
+}
