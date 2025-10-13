@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { inferAgentType, AgentType } from './agent-type';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai'
+import OpenAI from 'openai';
 
 type AgentCreateArgs = Parameters<PrismaService['agent']['create']>[0];
 
@@ -39,27 +39,90 @@ type AgentSummaryRow = {
 
 type AgentSummaryWithType = AgentSummaryRow & { type: AgentType };
 
+type SDKAgentMetadata = {
+  name?: string
+  area?: string
+  description?: string | null
+  instructions?: string | null
+  model?: string
+}
+
+type CreateAgentPayload = {
+  mode: 'sdk'
+  code: string
+  metadata?: SDKAgentMetadata
+}
+
+type AgentCreationResponse = {
+  message: string
+  agent: Awaited<ReturnType<PrismaService['agent']['create']>>
+  assistant_id: string | null
+  assistant_name: string | null
+}
+
 @Injectable()
 export class AgentsService {
-  private client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  constructor(private readonly prisma: PrismaService) {}
+  private client: OpenAI | null
 
-  async createAgent({ mode, code }: { mode: string; code: string }) {
-    if (mode === 'sdk') {
-      const assistant = await this.client.beta.assistants.create({
-        name: 'Agente SDK',
-        instructions: 'Sos un agente creado desde el SDK.',
-        model: 'gpt-4o',
-        tools: [{ type: 'code_interpreter' }],
-      });
+  constructor(private readonly prisma: PrismaService) {
+    this.client = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
+  }
 
-      return {
-        assistant_id: assistant.id,
-        name: assistant.name,
-      };
+  async createAgent({ mode, code, metadata }: CreateAgentPayload): Promise<AgentCreationResponse> {
+    if (mode !== 'sdk') {
+      throw new BadRequestException('Modo no soportado');
     }
 
-    return { error: 'Modo no soportado' };
+    const parsed = parseAgentSource(code);
+    const combined: Required<SDKAgentMetadata> = {
+      name: metadata?.name ?? parsed.name ?? 'Agente SDK',
+      area: metadata?.area ?? parsed.area ?? 'SDK Agents',
+      description:
+        metadata?.description ?? parsed.description ?? parsed.instructions ?? 'Agente creado desde el SDK',
+      instructions: metadata?.instructions ?? parsed.instructions ?? null,
+      model: metadata?.model ?? parsed.model ?? 'gpt-4o',
+    };
+
+    let assistantId: string | null = null;
+    let assistantName: string | null = null;
+
+    if (this.client) {
+      try {
+        const assistant = await this.client.beta.assistants.create({
+          name: combined.name,
+          instructions: combined.instructions ?? undefined,
+          model: combined.model,
+          tools: [{ type: 'code_interpreter' }],
+        });
+        assistantId = assistant.id;
+        assistantName = assistant.name;
+      } catch (error) {
+        console.error('Failed to create assistant via OpenAI:', error);
+      }
+    } else {
+      console.warn('OPENAI_API_KEY is not configured. Skipping assistant creation.');
+    }
+
+    const agent = await this.prisma.agent.create({
+      data: {
+        name: combined.name,
+        area: combined.area,
+        description: combined.description,
+        instructions: combined.instructions,
+        model: combined.model,
+        openaiAgentId: assistantId,
+      },
+      include: { traces: true, workflows: true },
+    });
+
+    return {
+      message: 'Agente creado y almacenado correctamente',
+      agent,
+      assistant_id: assistantId,
+      assistant_name: assistantName,
+    };
   }
 
 
@@ -122,4 +185,40 @@ export class AgentsService {
 
     return agent;
   }
+}
+
+type ParsedAgentSource = {
+  name?: string;
+  area?: string;
+  description?: string | null;
+  instructions?: string | null;
+  model?: string;
+};
+
+function parseAgentSource(code: string | undefined): ParsedAgentSource {
+  if (!code) {
+    return {};
+  }
+
+  const getMatch = (pattern: RegExp) => {
+    const match = code.match(pattern);
+    return match?.[1]?.trim();
+  };
+
+  const sanitize = (value?: string | null) => {
+    if (!value) return value ?? undefined;
+    return value.replace(/[,;]+$/, '').trim();
+  };
+
+  const name = sanitize(getMatch(/name\s*:\s*["'`]([\s\S]*?)["'`]/i));
+  const instructions = sanitize(getMatch(/instructions\s*:\s*["'`]([\s\S]*?)["'`]/i));
+  const model = sanitize(getMatch(/model\s*:\s*["'`]([\s\S]*?)["'`]/i));
+  const area =
+    sanitize(getMatch(/area\s*:\s*["'`]([\s\S]*?)["'`]/i)) ?? sanitize(getMatch(/\/\/\s*area\s*:\s*([^\n]+)/i));
+  const description =
+    sanitize(getMatch(/description\s*:\s*["'`]([\s\S]*?)["'`]/i)) ??
+    sanitize(getMatch(/\/\/\s*description\s*:\s*([^\n]+)/i)) ??
+    instructions ?? null;
+
+  return { name, area, description, instructions, model };
 }
