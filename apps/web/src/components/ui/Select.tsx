@@ -1,13 +1,17 @@
 import { forwardRef, SelectHTMLAttributes } from 'react'
+
 import { cn } from '@/lib/utils'
 
-type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> & {
   error?: string
   label?: string
+  size?: 'sm' | 'md'
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, error, label, children, ...props }, ref) => {
+  ({ className, error, label, size = 'md', children, ...props }, ref) => {
+    const sizeClasses = size === 'sm' ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'
+
     return (
       <div className="w-full">
         {label && (
@@ -18,10 +22,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           className={cn(
-            'w-full rounded-lg border bg-slate-900/50 px-4 py-2.5 text-sm text-slate-100 transition-all duration-200',
+            'w-full rounded-lg border bg-slate-900/50 text-slate-100 transition-all duration-200',
             'focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20',
             'disabled:cursor-not-allowed disabled:opacity-50',
             error ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-700',
+            sizeClasses,
             className
           )}
           {...props}
