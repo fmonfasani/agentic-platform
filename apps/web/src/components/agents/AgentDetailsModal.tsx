@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { Clock, Gauge, Link2, Loader2, Mic, Paperclip, Presentation, RotateCcw, Video, Workflow } from 'lucide-react'
 import AgentModal from './AgentModal'
-import { API_BASE_URL, OPENAI_CAPABILITIES } from '../lib/config'
+import { API_BASE_URL, OPENAI_CAPABILITIES } from '../../lib/config'
 import type { AgentCardData } from './AgentCard'
 import { PdfUploadSummary } from './PdfUploadSummary'
 

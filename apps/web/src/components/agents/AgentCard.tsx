@@ -3,8 +3,9 @@
 import { memo } from 'react'
 import { Download, Star, Trophy, Zap } from 'lucide-react'
 import clsx from 'clsx'
-import type { AgentType } from '../lib/agents-data'
+import type { AgentType } from '../../lib/agents-data'
 
+// ✅ Asegurate de tener este bloque:
 export type AgentCardData = {
   id: string
   name: string
@@ -22,6 +23,8 @@ type AgentCardProps = {
   agent: AgentCardData
   onDoubleClick?: (agent: AgentCardData) => void
 }
+
+// ✅ resto del componente igual (ya está bien hecho)
 
 function AgentCardComponent({ agent, onDoubleClick }: AgentCardProps) {
   return (

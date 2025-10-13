@@ -39,6 +39,10 @@ AGENTS = {
     "DependencyError": "agents_dependency",
     "EnvError": "agents_env",
     "RuntimeError": "agents_runtime",
+    "BuildError": "agents_web_build",
+    "DependencyError": "agents_web_dependency",
+    "RuntimeError": "agents_web_runtime",
+    "EnvError": "agents_env"
 }
 
 def load_agent_module(agent_name: str):

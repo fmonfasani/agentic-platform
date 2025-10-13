@@ -2,12 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
-body { @apply bg-gradient-to-b from-blue900 to-blue700 text-white; }
-.container-card { @apply bg-white/5 backdrop-blur border border-white/10 shadow-card rounded-2xl; }
-.badge { @apply text-xs px-2 py-0.5 rounded-md border border-white/10 bg-slate700; }
-.btn { @apply inline-flex items-center justify-center rounded-xl px-4 py-2 border border-white/15 transition; }
-.btn-primary { @apply bg-green500 text-white hover:bg-green600; }
-.btn-ghost { @apply bg-blue800 hover:bg-blue700 text-white/90; }
-.input { @apply w-full rounded-xl bg-paper text-ink px-3 py-2 border border-slate500/30; }
-.chip { @apply px-3 py-1 rounded-lg bg-blue700/60 border border-white/10 text-white/90 text-sm; }
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  * {
+    @apply border-slate-700;
+  }
+  
+  body {
+    @apply bg-slate-950 text-slate-100;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

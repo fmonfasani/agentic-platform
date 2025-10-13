@@ -1,203 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { AgentCard, type AgentCardData } from '../components/AgentCard'
-import { AgentDetailsModal } from '../components/AgentDetailsModal'
-import { agentGroups, orderedAgentTypes } from '../lib/agents-data'
-import { API_BASE_URL } from '../lib/config'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-type AgentCategory = keyof typeof agentGroups
-const orderedColumns: AgentCategory[] = orderedAgentTypes
-
-type AgentSummary = AgentCardData & {
-  description: string | null
-  type?: AgentCategory
-}
-
-type ApiAgent = {
-  id: string
-  name: string
-  area: string
-  description?: string | null
-  type?: string | null
-  uses: number
-  downloads: number
-  rewards: number
-  stars: number
-  votes: number
-  openaiAgentId?: string | null
-  model?: string | null
-  instructions?: string | null
-}
-
-export default function Page() {
-  const [agents, setAgents] = useState<AgentSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<AgentCategory | 'all'>('all')
-  const [sortKey, setSortKey] = useState<'stars' | 'uses'>('stars')
-  const [selectedAgent, setSelectedAgent] = useState<AgentSummary | null>(null)
+export default function HomePage() {
+  const router = useRouter()
 
   useEffect(() => {
-    async function loadAgents() {
-      setLoading(true)
-      try {
-        const res = await fetch(`${API_BASE_URL}/agents`, { cache: 'no-store' })
-        if (!res.ok) throw new Error('No se pudieron obtener los agentes')
-        const data = (await res.json()) as ApiAgent[]
-        const enriched: AgentSummary[] = data.map((agent) => ({
-          ...agent,
-          description: agent.description ?? null,
-          type: normalizeCategory(agent.type)
-        }))
-        setAgents(enriched)
-        setError(null)
-      } catch (err) {
-        console.error(err)
-        setError(err instanceof Error ? err.message : 'Ocurrió un error al cargar los agentes')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadAgents()
-  }, [])
-
-  const filteredAgents = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
-    const list = agents.filter((agent) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        agent.name.toLowerCase().includes(normalizedSearch) ||
-        agent.area.toLowerCase().includes(normalizedSearch)
-      const matchesFilter = filter === 'all' || agent.type === filter
-      return matchesSearch && matchesFilter
-    })
-
-    return [...list].sort((a, b) => (sortKey === 'stars' ? b.stars - a.stars : b.uses - a.uses))
-  }, [agents, filter, search, sortKey])
-
-  const groupedByCategory = useMemo(() => {
-    const emptyGroups = orderedColumns.reduce<Record<AgentCategory, AgentSummary[]>>((acc, category) => {
-      acc[category] = []
-      return acc
-    }, {} as Record<AgentCategory, AgentSummary[]>)
-
-    return filteredAgents.reduce((acc, agent) => {
-      const category = normalizeCategory(agent.type)
-      acc[category].push(agent)
-      return acc
-    }, emptyGroups)
-  }, [filteredAgents])
+    router.push('/dashboard')
+  }, [router])
 
   return (
-    <main className="min-h-screen bg-[#050b15] px-6 pb-16 pt-12 text-white">
-      <div className="mx-auto max-w-7xl">
-        <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 to-slate-950/40 p-8 shadow-2xl">
-          <div className="flex flex-col gap-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/70">
-              Sistema de Agentes Autónomos
-            </p>
-            <h1 className="text-3xl font-semibold text-white/90">Dashboard de Agentes</h1>
-            <p className="text-sm text-white/60">Monitor de agentes.</p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
-            <input
-              type="search"
-              placeholder="Buscar agente…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-400/60 focus:outline-none"
-            />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as AgentCategory | 'all')}
-              className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 focus:border-emerald-400/60 focus:outline-none"
-            >
-              <option value="all">Todas las categorías</option>
-              {orderedColumns.map((key) => (
-                <option key={key} value={key}>
-                  {agentGroups[key].title}
-                </option>
-              ))}
-            </select>
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as 'stars' | 'uses')}
-              className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white/80 focus:border-emerald-400/60 focus:outline-none"
-            >
-              <option value="stars">Ordenar por puntuación</option>
-              <option value="uses">Ordenar por usos</option>
-            </select>
-          </div>
-        </header>
-
-        {error && (
-          <div className="mt-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="mt-16 flex items-center justify-center text-white/60">
-            Cargando información de agentes…
-          </div>
-        ) : (
-          <section className="mt-10 grid gap-6 xl:grid-cols-4">
-            {orderedColumns.map((category) => {
-              const meta = agentGroups[category]
-              const agentsForCategory = groupedByCategory[category] ?? []
-              return (
-                <div
-                  key={category}
-                  className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-950/40 p-6"
-                >
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.25em] text-emerald-300/60">{meta.title}</p>
-                    <p className="text-sm text-white/50">{meta.description}</p>
-                  </div>
-                  <div className="space-y-3">
-                    {agentsForCategory.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/50">
-                        No hay agentes registrados en esta categoría.
-                      </p>
-                    ) : (
-                      agentsForCategory.map((agent) => (
-                        <AgentCard
-                          key={agent.id}
-                          agent={agent}
-                          onDoubleClick={() => setSelectedAgent(agent)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </section>
-        )}
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-500" />
+        <p className="mt-4 text-slate-400">Redirigiendo...</p>
       </div>
-
-      <AgentDetailsModal
-        agent={selectedAgent}
-        open={!!selectedAgent}
-        onClose={() => setSelectedAgent(null)}
-      />
-    </main>
+    </div>
   )
-}
-
-// === Helper ===
-function normalizeCategory(type: string | null | undefined): AgentCategory {
-  if (!type) return 'technical'
-  if (type in agentGroups) return type as AgentCategory
-
-  const normalized = type.toLowerCase()
-  if (normalized.includes('financ') || normalized.includes('contab')) return 'financial'
-  if (normalized.includes('tecnic') || normalized.includes('infra')) return 'technical'
-  if (normalized.includes('licenc') || normalized.includes('permiso')) return 'regulatory'
-  if (normalized.includes('reporte') || normalized.includes('informe')) return 'reporting'
-  return 'technical'
 }

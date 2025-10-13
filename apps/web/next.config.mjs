@@ -1,3 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = { experimental: { serverActions: { allowedOrigins: ['localhost:3000'] } } }
+const nextConfig = {
+  reactStrictMode: true,
+  transpilePackages: ['@agents-hub/ui'],
+}
+
 export default nextConfig
