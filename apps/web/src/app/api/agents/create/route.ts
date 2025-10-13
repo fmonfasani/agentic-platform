@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { forwardToEnacom } from '../_utils';
 
 export async function POST(req: Request) {
   const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL
