@@ -1,15 +1,64 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
+  const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL
+
+  if (!apiUrl) {
+    return NextResponse.json(
+      { message: 'API_URL environment variable is not defined.' },
+      { status: 500 }
+    )
+  }
+
+  let targetUrl: string
+  try {
+    targetUrl = new URL('/agents/create', apiUrl).toString()
+  } catch (error) {
+    console.error('Invalid API_URL value:', apiUrl, error)
+    return NextResponse.json(
+      { message: 'API_URL environment variable has an invalid value.' },
+      { status: 500 }
+    )
+  }
+
   const body = await req.json()
 
-  // Proxy hacia tu backend NestJS
-  const response = await fetch(`${process.env.API_URL}/agents/create`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
 
-  const data = await response.json()
-  return NextResponse.json(data)
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!response.ok) {
+      const errorPayload = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text()
+
+      return NextResponse.json(
+        { message: 'Upstream API request failed', details: errorPayload },
+        { status: response.status }
+      )
+    }
+
+    const data = contentType.includes('application/json')
+      ? await response.json()
+      : await response.text()
+
+    if (typeof data === 'string') {
+      return NextResponse.json({ data })
+    }
+
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Error proxying agent creation request:', error)
+    return NextResponse.json(
+      {
+        message: 'Failed to reach upstream API',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    )
+  }
 }
