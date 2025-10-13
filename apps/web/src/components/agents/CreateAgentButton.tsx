@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { SDKAgentBuilderModal } from './SDKAgentBuilderModal'
+import { CreateAgentModal } from './CreateAgentModal'
 
 export function CreateAgentButton() {
   const [open, setOpen] = useState(false)
@@ -21,7 +21,7 @@ export function CreateAgentButton() {
       </Button>
 
       {/* Modal con log de montaje */}
-      <SDKAgentBuilderModal open={open} onClose={() => setOpen(false)} />
+      <CreateAgentModal open={open} onClose={() => setOpen(false)} />
     </>
   )
 }
