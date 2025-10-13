@@ -11,6 +11,11 @@ import { EmptyState } from '../../components/ui/EmptyState'
 
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import {
+  AgentCapabilitiesModal,
+  type AgentCapabilitiesAgent,
+  type AgentToolsState
+} from '../../components/agents/AgentCapabilitiesModal'
 
 type AgentRanking = {
   id: string
@@ -37,11 +42,123 @@ type LeaderboardResponse = {
   areas: AreaSummary[]
 }
 
+function resolveAgentStatus(agent: AgentRanking): AgentCapabilitiesAgent['status'] {
+  if (agent.uses === 0 && agent.totalTraces === 0) {
+    return 'draft'
+  }
+  if (agent.uses === 0) {
+    return 'paused'
+  }
+  return 'active'
+}
+
+function sanitizeAgentName(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'agent'
+}
+
+function computeSeed(value: string) {
+  return value.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+}
+
+function createDefaultToolsForAgent(agent: AgentRanking): AgentToolsState {
+  const now = Math.floor(Date.now() / 1000)
+  const slug = sanitizeAgentName(agent.name)
+  const fileEntries = [
+    {
+      id: `file_${agent.id.slice(0, 6)}_brief`,
+      filename: `${slug}-brief.pdf`,
+      bytes: 186 * 1024,
+      created_at: now - 60 * 60 * 24 * 2
+    },
+    {
+      id: `file_${agent.id.slice(0, 6)}_metrics`,
+      filename: `${slug}-metrics.xlsx`,
+      bytes: 92 * 1024,
+      created_at: now - 60 * 60 * 24 * 5
+    },
+    {
+      id: `file_${agent.id.slice(0, 6)}_procedure`,
+      filename: `${slug}-procedure.md`,
+      bytes: 42 * 1024,
+      created_at: now - 60 * 60 * 24 * 9
+    }
+  ]
+
+  const fileSearchEnabled = agent.downloads > 1
+  const files = fileSearchEnabled ? fileEntries.slice(0, fileEntries.length - 1 + Math.min(agent.rewards, 1)) : []
+
+  const connectorOptions = [
+    { connector_id: 'connector_googledrive', name: 'Google Drive' },
+    { connector_id: 'connector_dropbox', name: 'Dropbox' },
+    { connector_id: 'connector_sharepoint', name: 'SharePoint' },
+    { connector_id: 'connector_gmail', name: 'Gmail' }
+  ]
+  const connectorSeed = computeSeed(agent.id) % connectorOptions.length
+  const baseConnector = connectorOptions[connectorSeed]
+
+  const connectors: AgentToolsState['mcp']['connectors'] = fileSearchEnabled
+    ? [
+        {
+          id: `${baseConnector.connector_id}_${agent.id.slice(0, 6)}`,
+          connector_id: baseConnector.connector_id,
+          name: baseConnector.name,
+          status: 'active',
+          tools_count: 2 + (agent.rewards % 4),
+          require_approval: agent.rewards > 6 ? 'never' : 'always'
+        }
+      ]
+    : []
+
+  const remoteServers: AgentToolsState['mcp']['remote_servers'] = agent.totalTraces > 3
+    ? [
+        {
+          id: `server_${agent.id.slice(0, 6)}`,
+          server_label: `${slug}_ops`,
+          server_url: 'https://mcp.enacom.gob.ar/stream',
+          server_description: 'Servidor MCP interno para automatizaciones del ENACOM',
+          status: 'connected',
+          require_approval: agent.uses > 40 ? 'never' : 'always',
+          allowed_tools: agent.uses > 60 ? ['sync', 'export', 'notify'] : ['sync', 'export']
+        }
+      ]
+    : []
+
+  return {
+    file_search: {
+      enabled: fileSearchEnabled,
+      vector_store_id: fileSearchEnabled ? `vs_${agent.id.slice(0, 8)}` : null,
+      file_count: files.length,
+      max_num_results: 10,
+      files
+    },
+    web_search: {
+      enabled: agent.uses > 10,
+      type: agent.avgGrade >= 0.8 ? 'deep_research' : agent.avgGrade >= 0.6 ? 'agentic' : 'non_reasoning',
+      domain_filtering_enabled: agent.avgGrade > 0.85,
+      allowed_domains: agent.avgGrade > 0.85 ? ['enacom.gob.ar', 'argentina.gob.ar'] : [],
+      user_location: {
+        country: 'AR',
+        timezone: 'America/Argentina/Buenos_Aires',
+        city: 'Buenos Aires',
+        region: 'CABA'
+      },
+      show_citations: agent.avgGrade >= 0.5
+    },
+    mcp: {
+      connectors,
+      remote_servers: remoteServers
+    }
+  }
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedAgent, setSelectedAgent] = useState<AgentCapabilitiesAgent | null>(null)
+  const [agentToolsById, setAgentToolsById] = useState<Record<string, AgentToolsState>>({})
+  const [capabilitiesOpen, setCapabilitiesOpen] = useState(false)
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true)
@@ -94,6 +211,29 @@ export default function DashboardPage() {
   }, [data, searchTerm])
 
   const showEmptyState = !loading && !filteredLeaderboard.length
+
+  const handleAgentRowClick = (agent: AgentRanking) => {
+    const existingTools = agentToolsById[agent.id]
+    const tools = existingTools ?? createDefaultToolsForAgent(agent)
+
+    if (!existingTools) {
+      setAgentToolsById((prev) => ({ ...prev, [agent.id]: tools }))
+    }
+
+    setSelectedAgent({
+      id: agent.id,
+      name: agent.name,
+      area: agent.area,
+      status: resolveAgentStatus(agent),
+      tools
+    })
+    setCapabilitiesOpen(true)
+  }
+
+  const handleToolsChange = (agentId: string, tools: AgentToolsState) => {
+    setAgentToolsById((prev) => ({ ...prev, [agentId]: tools }))
+    setSelectedAgent((prev) => (prev && prev.id === agentId ? { ...prev, tools } : prev))
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -235,7 +375,8 @@ export default function DashboardPage() {
                       {filteredLeaderboard.map((agent, idx) => (
                         <tr
                           key={agent.id}
-                          className="transition-colors hover:bg-slate-800/30"
+                          onClick={() => handleAgentRowClick(agent)}
+                          className="cursor-pointer transition-colors hover:bg-slate-800/30"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -265,6 +406,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      <AgentCapabilitiesModal
+        agent={selectedAgent}
+        open={capabilitiesOpen && !!selectedAgent}
+        onClose={() => setCapabilitiesOpen(false)}
+        onToolsChange={handleToolsChange}
+      />
     </div>
   )
 }
