@@ -85,24 +85,27 @@ export class AgentsService {
       model: metadata?.model ?? parsed.model ?? 'gpt-4o',
     };
 
+    if (!this.client) {
+      throw new BadRequestException(
+        'OPENAI_API_KEY is not configured. Unable to create OpenAI assistant for the agent.',
+      );
+    }
+
     let assistantId: string | null = null;
     let assistantName: string | null = null;
 
-    if (this.client) {
-      try {
-        const assistant = await this.client.beta.assistants.create({
-          name: combined.name,
-          instructions: combined.instructions ?? undefined,
-          model: combined.model,
-          tools: [{ type: 'code_interpreter' }],
-        });
-        assistantId = assistant.id;
-        assistantName = assistant.name;
-      } catch (error) {
-        console.error('Failed to create assistant via OpenAI:', error);
-      }
-    } else {
-      console.warn('OPENAI_API_KEY is not configured. Skipping assistant creation.');
+    try {
+      const assistant = await this.client.beta.assistants.create({
+        name: combined.name,
+        instructions: combined.instructions ?? undefined,
+        model: combined.model,
+        tools: [{ type: 'code_interpreter' }],
+      });
+      assistantId = assistant.id;
+      assistantName = assistant.name;
+    } catch (error) {
+      console.error('Failed to create assistant via OpenAI:', error);
+      throw new BadRequestException('Failed to create assistant via OpenAI. Please try again later.');
     }
 
     const agent = await this.prisma.agent.create({
