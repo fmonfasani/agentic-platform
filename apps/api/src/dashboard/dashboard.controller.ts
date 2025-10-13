@@ -64,7 +64,7 @@ export class DashboardController {
     })
 
     const leaderboard = agents
-      .map((agent) => {
+      .map((agent:any) => {
         const avgGrade = this.calculateAverageGrade(agent.traces)
         return {
           id: agent.id,
@@ -77,7 +77,7 @@ export class DashboardController {
           totalTraces: agent.traces.length,
         }
       })
-      .sort((a, b) => b.avgGrade - a.avgGrade)
+      .sort((a:any, b:any) => b.avgGrade - a.avgGrade)
 
     const { summaries } = this.aggregateAreas(agents)
 
@@ -125,7 +125,7 @@ export class DashboardController {
         totalDownloads: data.downloads,
         totalTraces: data.traces,
       }))
-      .sort((a, b) => b.avgGrade - a.avgGrade)
+      .sort((a:any, b:any) => b.avgGrade - a.avgGrade)
 
     const summaries = Array.from(grouped.entries())
       .map(([area, data]) => ({

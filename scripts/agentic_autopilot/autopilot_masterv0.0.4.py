@@ -14,6 +14,9 @@ from pathlib import Path
 from openai import OpenAI
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from repair_loop_api import main as repair_api
+from repair_loop_web import main as repair_web
+
 
 # ===============================================================
 # CONFIGURACIÓN INICIAL
@@ -141,6 +144,15 @@ flowchart TD
     F --> G[Reports + Docs + Logs]
 ```
 """
+    
+
+    # Después de ejecutar los diagnósticos base:
+    log("🩺 Iniciando reparación API...")
+    repair_api()
+
+    log("🎨 Iniciando reparación WEB...")
+    repair_web()
+
     md_path.write_text(content, encoding="utf-8")
     log(f"📘 Documentación actualizada: {md_path}")
 

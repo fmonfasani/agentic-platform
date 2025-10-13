@@ -1,0 +1,23 @@
+```diff
+diff --git a/apps/api/src/agents/agents.module.ts b/apps/api/src/agents/agents.module.ts
+index 1234567..89abcde 100644
+--- a/apps/api/src/agents/agents.module.ts
++++ b/apps/api/src/agents/agents.module.ts
+@@ -1,6 +1,7 @@
+ import { Module } from '@nestjs/common';
+ import { AgentRunController } from './agent-run.controller';
+ import { AgentRunnerService } from './agent-runner.service';
++import { AgentUploadService } from './agent-upload.service';
+ import { AgentTraceService } from './agent-trace.service';
+ import { AgentEvalService } from './agent-eval.service';
+
+@@ -8,6 +9,7 @@ import { AgentEvalService } from './agent-eval.service';
+ @Module({
+   controllers: [AgentRunController],
+   providers: [
+     AgentRunnerService,
++    AgentUploadService,
+     AgentTraceService,
+     AgentEvalService,
+   ],
+```

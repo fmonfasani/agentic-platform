@@ -65,7 +65,7 @@ export class AgentsService {
       orderBy: { name: 'asc' },
     });
 
-    return agents.map((agent) => ({ ...agent, type: inferAgentType(agent) }));
+    return agents.map((agent:any) => ({ ...agent, type: inferAgentType(agent) }));
   }
 
   async getAgent(id: string) {

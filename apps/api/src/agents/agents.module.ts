@@ -16,6 +16,7 @@ import { MetricsService } from './metrics/metrics.service'
     AgentsService,
     MetricsService,
     AgentRunnerService,
+    AgentUploadService,
     AgentTraceService,
     AgentEvalService,
     PrismaService

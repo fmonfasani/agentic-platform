@@ -1,0 +1,12 @@
+```
+diff --git a/src/dashboard/dashboard.controller.ts b/src/dashboard/dashboard.controller.ts
+--- a/src/dashboard/dashboard.controller.ts
++++ b/src/dashboard/dashboard.controller.ts
+@@ -56,7 +56,7 @@
+     const leaderboard = agents
+-      .map((agent) => {
++      .map((agent: any) => {
+         const avgGrade = this.calculateAverageGrade(agent.traces)
+         return {
+           id: agent.id,
+```

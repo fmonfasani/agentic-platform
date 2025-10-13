@@ -1,0 +1,13 @@
+```diff
+diff --git a/src/dashboard/dashboard.controller.ts b/src/dashboard/dashboard.controller.ts
+--- a/src/dashboard/dashboard.controller.ts
++++ b/src/dashboard/dashboard.controller.ts
+@@ -64,7 +64,7 @@
+ 
+     // Some code here
+ 
+-    someFunction(agent) {
++    someFunction(agent: any) {
+         // Function implementation
+     }
+```
