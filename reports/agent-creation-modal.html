@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crear Agente con SDK</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --background: #1a1a2e;
+      --modal-bg: #282a3a;
+      --field-bg: #3b3d56;
+      --accent-green: #39ff14;
+      --text-primary: #e8edf1;
+      --text-secondary: #c4d0ea;
+      --border: #80a2e8;
+      --border-hover: #a55eea;
+      --muted: #6c7b8a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--background);
+      font-family: 'Inter', 'Roboto', sans-serif;
+      color: var(--text-primary);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: var(--modal-bg);
+      border-radius: 12px;
+      padding: 40px 36px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+
+    .modal__title {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+
+    .modal__title svg {
+      width: 28px;
+      height: 28px;
+      fill: currentColor;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .field label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .select-input {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .select-input input,
+    .select-input select {
+      width: 100%;
+      padding: 12px 48px 12px 16px;
+      background: var(--field-bg);
+      border: 1px solid rgba(128, 162, 232, 0.35);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 500;
+      text-align: left;
+      appearance: none;
+    }
+
+    .select-input input::placeholder {
+      color: rgba(232, 237, 241, 0.65);
+    }
+
+    .select-input svg {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: rgba(232, 237, 241, 0.7);
+      pointer-events: none;
+    }
+
+    .section__subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .purpose-buttons,
+    .org-tabs,
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .purpose-button,
+    .org-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: var(--field-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 500;
+      transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    .purpose-button svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .purpose-button:hover,
+    .purpose-button.is-active,
+    .org-tab:hover,
+    .org-tab.is-active {
+      border-color: var(--border-hover);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(165, 94, 234, 0.35);
+    }
+
+    .action-buttons {
+      margin-top: 8px;
+      gap: 20px;
+    }
+
+    .button {
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .button--ghost {
+      background: transparent;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+    }
+
+    .button--ghost:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .button--primary {
+      background: var(--accent-green);
+      border: none;
+      color: #0d0f1a;
+      box-shadow: 0 14px 28px rgba(57, 255, 20, 0.28);
+    }
+
+    .button--primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 32px rgba(57, 255, 20, 0.38);
+    }
+
+    @media (max-width: 540px) {
+      .modal {
+        padding: 32px 24px;
+        gap: 24px;
+      }
+
+      .purpose-button,
+      .org-tab {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal__title" id="modal-title">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2a7.5 7.5 0 0 0-7.5 7.5c0 3.074 1.83 5.31 3.825 6.744a5.7 5.7 0 0 0-.825 2.756c0 1.657 1.343 3 3 3 1.445 0 2.655-.992 2.948-2.32a7.52 7.52 0 0 0 1.302.113c4.142 0 7.5-3.358 7.5-7.5S16.142 2 12 2Zm-.75 16.5c0 .966-.784 1.75-1.75 1.75s-1.75-.784-1.75-1.75c0-.966.784-1.75 1.75-1.75s1.75.784 1.75 1.75Zm2.912.015c-.502 0-.99-.06-1.451-.173a3.214 3.214 0 0 0-3.461-2.542 6 6 0 0 1-2.61-4.8C6.64 7.796 9.005 5.5 12 5.5s5.36 2.296 5.36 5.5-2.365 5.5-5.36 5.5Z" />
+        </svg>
+        Crear Agente con SDK
+      </div>
+
+      <div class="section">
+        <div class="field">
+          <label for="agent-name">Nombre del Agente</label>
+          <div class="select-input">
+            <input type="text" id="agent-name" name="agent-name" placeholder="Selecciona o escribe un nombre" />
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 10l5 5 5-5H7z" />
+            </svg>
+          </div>
+        </div>
+        <div class="field">
+          <label for="model">Modelo</label>
+          <div class="select-input">
+            <select id="model" name="model">
+              <option>gpt-4-turbo</option>
+            </select>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 10l5 5 5-5H7z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section__subtitle">Propósito del Agente (Selecciona uno o más)</h2>
+        <div class="purpose-buttons">
+          <button class="purpose-button is-active" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3a9 9 0 1 0 9 9 9.01 9.01 0 0 0-9-9Zm0 15.6A6.6 6.6 0 1 1 18.6 12 6.6 6.6 0 0 1 12 18.6Zm-.75-10.35h1.5v3.9h-1.5Zm0 5.1h1.5v1.5h-1.5Z" />
+            </svg>
+            Análisis
+          </button>
+          <button class="purpose-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h9.6a3 3 0 0 0 3-3V8.4L12.6 3Zm0 1.5h6v4.5h4.5v9A1.5 1.5 0 0 1 15.6 19H6a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 6 4.5Zm2.25 12h5.1v1.5h-5.1Zm0-3h7.5v1.5h-7.5Zm0-3h7.5v1.5h-7.5Z" />
+            </svg>
+            Informes
+          </button>
+          <button class="purpose-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.5 3A2.5 2.5 0 0 0 5 5.5v13A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-9l-5-6Zm0 1.5h5.9l4.1 4.92V7.5h-4a1 1 0 0 1-1-1V4.5H7.5A1 1 0 0 0 6.5 5.5v13a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V12h-4a1.5 1.5 0 0 1-1.5-1.5V4.5h-5.5Z" />
+            </svg>
+            Reportes
+          </button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section__subtitle">Herramientas Disponibles</h2>
+        <div class="field">
+          <div class="select-input">
+            <select id="tools" name="tools">
+              <option>code_interpreter</option>
+            </select>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 10l5 5 5-5H7z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="org-tabs">
+          <button class="org-tab is-active" type="button">DIRECCIÓN</button>
+          <button class="org-tab" type="button">SUBDIRECCIÓN</button>
+          <button class="org-tab" type="button">AREA</button>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="button button--ghost" type="button">Cancelar</button>
+        <button class="button button--primary" type="button">Crear Agente</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
