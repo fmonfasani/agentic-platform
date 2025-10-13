@@ -12,7 +12,11 @@ export async function POST(req: Request) {
 
   let targetUrl: string
   try {
-    targetUrl = new URL('/agents/create', apiUrl).toString()
+    const url = new URL(apiUrl)
+    url.pathname = url.pathname.endsWith('/')
+      ? `${url.pathname}agents/create`
+      : `${url.pathname}/agents/create`
+    targetUrl = url.toString()
   } catch (error) {
     console.error('Invalid API_URL value:', apiUrl, error)
     return NextResponse.json(
