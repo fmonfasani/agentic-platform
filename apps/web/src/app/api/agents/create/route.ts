@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { forwardToEnacom } from '../_utils';
 
 export async function POST(req: Request) {
