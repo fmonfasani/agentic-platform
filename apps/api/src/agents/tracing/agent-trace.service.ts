@@ -113,7 +113,7 @@ export class AgentTraceService {
         orderBy: { createdAt: 'desc' },
         take
       })
-      .then((traces) => traces.map((trace) => this.deserialize(trace)))
+      .then((traces) => traces.map((trace:any) => this.deserialize(trace)))
   }
 
   private stringify(value: unknown) {

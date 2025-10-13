@@ -1,0 +1,29 @@
+The error indicates that `AgentUploadService` is not available in the `AgentsModule` context. To fix this, ensure that `AgentUploadService` is either provided directly in `AgentsModule` or imported from another module.
+
+Here's a unified diff patch to fix the issue by adding `AgentUploadService` to the `AgentsModule`:
+
+```diff
+diff --git a/apps/api/src/agents/agents.module.ts b/apps/api/src/agents/agents.module.ts
+index abcdef1..1234567 100644
+--- a/apps/api/src/agents/agents.module.ts
++++ b/apps/api/src/agents/agents.module.ts
+@@ -1,6 +1,7 @@
+ import { Module } from '@nestjs/common';
+ import { AgentRunController } from './agent-run.controller';
+ import { AgentRunnerService } from './agent-runner.service';
++import { AgentUploadService } from './agent-upload.service';
+ import { AgentTraceService } from './agent-trace.service';
+ import { AgentEvalService } from './agent-eval.service';
+
+@@ -8,6 +9,7 @@ import { AgentEvalService } from './agent-eval.service';
+ @Module({
+   controllers: [AgentRunController],
+   providers: [
+     AgentRunnerService,
++    AgentUploadService,
+     AgentTraceService,
+     AgentEvalService,
+   ],
+```
+
+Make sure that `AgentUploadService` is correctly implemented in `agent-upload.service.ts`. If `AgentUploadService` is part of another module, you may need to import that module instead.

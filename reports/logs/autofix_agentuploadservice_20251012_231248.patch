@@ -1,0 +1,23 @@
+diff --git a/apps/api/src/agents/agents.module.ts b/apps/api/src/agents/agents.module.ts
+--- a/apps/api/src/agents/agents.module.ts
++++ b/apps/api/src/agents/agents.module.ts
+--- a/apps\api\src\agents\agents.module.ts
++++ b/apps\api\src\agents\agents.module.ts
+@@ -1,5 +1,6 @@
+ import { Module } from '@nestjs/common';
+ import { AgentRunController } from './agent-run.controller';
++import { AgentUploadService } from './services/agentUploadService.service';
+@@
+   providers: [
+     AgentRunnerService,
++    AgentUploadService,
+     AgentTraceService,
+     AgentEvalService,
+   ],
+@@
+   exports: [
+     AgentRunnerService,
++    AgentUploadService,
+     AgentTraceService,
+     AgentEvalService,
+   ],
