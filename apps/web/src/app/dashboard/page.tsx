@@ -1,7 +1,16 @@
+// app/dashboard/page.tsx
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertCircle, Search, Sparkles } from 'lucide-react'
+import { AlertCircle, Search, Sparkles, TrendingUp, Users, Zap, Download } from 'lucide-react'
+
+import { Input } from '../../components/ui/Input'
+import { Stat } from '../../components/ui/Stat'
+import { Badge } from '../../components/ui/Badge'
+import { EmptyState } from '../../components/ui/EmptyState'
+
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
 
 type AgentRanking = {
   id: string
@@ -87,194 +96,192 @@ export default function DashboardPage() {
   const showEmptyState = !loading && !filteredLeaderboard.length
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-gradient-to-b from-[#060b18] via-[#081226] to-[#02060d] text-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 md:px-10">
-        <header className="space-y-3">
-          <div className="flex items-center gap-3 text-sm font-medium uppercase tracking-[0.3em] text-sky-300/70">
-            <Sparkles className="h-4 w-4" />
-            <span>Sistema de Agentes Autónomos Inteligentes</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-emerald-400" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
+              Sistema de Agentes Autónomos
+            </span>
           </div>
-          <p className="text-base text-white/60">Plataforma Unificada de Procesamiento</p>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold text-white md:text-4xl">Dashboard de agentes</h1>
-            <p className="text-white/60">Monitoreo y gestión de agentes del sistema</p>
-          </div>
+          <h1 className="text-3xl font-bold text-slate-100 mb-2">Dashboard de Agentes</h1>
+          <p className="text-slate-400">Monitoreo y gestión en tiempo real</p>
         </header>
 
+        {/* Error Alert */}
         {error && (
-          <div className="flex flex-col gap-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-100 shadow-lg shadow-red-900/10 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="rounded-full bg-red-500/30 p-2">
-                <AlertCircle className="h-6 w-6" />
+          <Card className="mb-6 border-red-500/50 bg-red-500/5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-red-500/10 p-2">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-red-200">Error al cargar los datos</p>
+                  <p className="mt-1 text-sm text-red-300/80">{error}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold text-red-100">Error al cargar los agentes</p>
-                <p className="text-sm text-red-100/80">{error}</p>
-              </div>
+              <Button variant="secondary" size="sm" onClick={fetchLeaderboard}>
+                Reintentar
+              </Button>
             </div>
-            <button
-              type="button"
-              onClick={fetchLeaderboard}
-              className="inline-flex items-center justify-center rounded-full border border-red-400/40 bg-red-500/20 px-6 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/30"
-            >
-              Reintentar
-            </button>
+          </Card>
+        )}
+
+        {/* Search */}
+        <div className="relative mb-8">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <Input
+            type="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar agente por nombre o área..."
+            className="pl-12"
+          />
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-500" />
+              <p className="mt-4 text-sm text-slate-400">Cargando datos del sistema...</p>
+            </div>
           </div>
         )}
 
-        <div className="flex flex-col gap-6">
-          <div className="relative flex items-center">
-            <Search className="pointer-events-none absolute left-4 h-5 w-5 text-white/40" />
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar agente por nombre o categoría..."
-              className="w-full rounded-full border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-base text-white placeholder:text-white/40 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-            />
-          </div>
+        {/* Empty State */}
+        {showEmptyState && !loading && (
+          <EmptyState
+            icon={Sparkles}
+            title="No hay agentes configurados"
+            description="Comienza creando tu primer agente autónomo para automatizar procesos del sistema"
+            action={{
+              label: 'Crear primer agente',
+              onClick: () => console.log('Create agent')
+            }}
+          />
+        )}
 
-          {loading && (
-            <div className="rounded-3xl border border-white/5 bg-white/5 p-10 text-center text-white/60">
-              Cargando información del sistema...
+        {/* Content */}
+        {!loading && !showEmptyState && data && (
+          <div className="space-y-8">
+            {/* Stats Grid */}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Stat label="Agentes Activos" value={totals.totalAgents} icon={Users} trend="neutral" />
+              <Stat label="Ejecuciones Totales" value={totals.totalUses} icon={Zap} trend="up" />
+              <Stat label="Descargas" value={totals.totalDownloads} icon={Download} trend="up" />
+              <Stat label="Calidad Promedio" value={`${(globalAvgGrade * 100).toFixed(0)}%`} icon={TrendingUp} trend="up" />
             </div>
-          )}
 
-          {showEmptyState && !loading && (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-16 text-center">
-              <div className="rounded-full bg-sky-500/10 p-4 text-sky-300">
-                <Sparkles className="h-8 w-8" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-white">No hay agentes configurados</h2>
-                <p className="max-w-md text-white/60">
-                  Comienza creando tu primer agente autónomo para automatizar procesos del sistema.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
-              >
-                Crear primer agente
-              </button>
-            </div>
-          )}
-
-          {!loading && !showEmptyState && data && (
-            <div className="space-y-8">
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <DashboardStatCard label="Agentes monitoreados" value={totals.totalAgents.toString()} />
-                <DashboardStatCard label="Recompensas totales" value={totals.totalRewards.toString()} />
-                <DashboardStatCard label="Usos totales" value={totals.totalUses.toString()} />
-                <DashboardStatCard label="Calidad promedio" value={globalAvgGrade.toFixed(2)} />
-              </section>
-
-              {!!data.areas.length && (
-                <section className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">Desempeño por área funcional</h2>
-                    <p className="text-sm text-white/60">
-                      Analiza los indicadores clave por cada área operativa del sistema.
-                    </p>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {data.areas.map((area) => (
-                      <div
-                        key={area.area}
-                        className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-inner shadow-black/20"
-                      >
-                        <div className="space-y-1">
-                          <h3 className="text-base font-semibold text-white">{area.area}</h3>
-                          <p className="text-sm text-white/60">{area.agentCount} agente(s)</p>
-                        </div>
-                        <dl className="mt-4 space-y-3 text-sm text-white/70">
-                          <DashboardAreaMetric label="Calidad promedio" value={area.avgGrade.toFixed(2)} />
-                          <DashboardAreaMetric label="Recompensas" value={area.totalRewards.toString()} />
-                          <DashboardAreaMetric label="Usos" value={area.totalUses.toString()} />
-                          <DashboardAreaMetric label="Descargas" value={area.totalDownloads.toString()} />
-                        </dl>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <section className="space-y-4">
-                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">Ranking de agentes</h2>
-                    <p className="text-sm text-white/60">Ordenado por calidad promedio</p>
-                  </div>
-                  {searchTerm && (
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                      {filteredLeaderboard.length} resultado(s)
-                    </p>
-                  )}
+            {/* Areas Performance */}
+            {!!data.areas.length && (
+              <section>
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-slate-100">Desempeño por Área</h2>
+                  <p className="text-sm text-slate-400">Métricas clave por área funcional</p>
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-white/10">
-                  <table className="w-full border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-white/60">
-                        <th className="px-4 py-3">Agente</th>
-                        <th className="px-4 py-3">Área</th>
-                        <th className="px-4 py-3">Recompensas</th>
-                        <th className="px-4 py-3">Usos</th>
-                        <th className="px-4 py-3">Descargas</th>
-                        <th className="px-4 py-3">Calidad promedio</th>
-                        <th className="px-4 py-3">Trazas</th>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {data.areas.map((area) => (
+                    <Card key={area.area} hover>
+                      <div className="mb-4">
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-semibold text-slate-100">{area.area}</h3>
+                          <Badge variant="default">{area.agentCount} agentes</Badge>
+                        </div>
+                      </div>
+                      <div className="space-y-3 text-sm">
+                        <MetricRow label="Calidad" value={`${(area.avgGrade * 100).toFixed(0)}%`} />
+                        <MetricRow label="Recompensas" value={area.totalRewards.toString()} />
+                        <MetricRow label="Usos" value={area.totalUses.toString()} />
+                        <MetricRow label="Descargas" value={area.totalDownloads.toString()} />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Leaderboard Table */}
+            <section>
+              <div className="mb-4 flex items-end justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-100">Ranking de Agentes</h2>
+                  <p className="text-sm text-slate-400">Ordenado por calidad promedio</p>
+                </div>
+                {searchTerm && (
+                  <p className="text-xs uppercase tracking-wider text-slate-500">
+                    {filteredLeaderboard.length} resultado(s)
+                  </p>
+                )}
+              </div>
+              <Card className="overflow-hidden p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b border-slate-700 bg-slate-900/50">
+                      <tr>
+                        <Th>Agente</Th>
+                        <Th>Área</Th>
+                        <Th>Recompensas</Th>
+                        <Th>Usos</Th>
+                        <Th>Descargas</Th>
+                        <Th>Calidad</Th>
+                        <Th>Trazas</Th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {filteredLeaderboard.map((agent, index) => (
+                    <tbody className="divide-y divide-slate-800">
+                      {filteredLeaderboard.map((agent, idx) => (
                         <tr
                           key={agent.id}
-                          className={`border-b border-white/5 text-white/80 ${index % 2 === 0 ? 'bg-white/[0.02]' : ''}`}
+                          className="transition-colors hover:bg-slate-800/30"
                         >
-                          <td className="px-4 py-3 font-semibold text-white">{agent.name}</td>
-                          <td className="px-4 py-3 text-white/60">{agent.area ?? 'Sin área'}</td>
-                          <td className="px-4 py-3">{agent.rewards}</td>
-                          <td className="px-4 py-3">{agent.uses}</td>
-                          <td className="px-4 py-3">{agent.downloads}</td>
-                          <td className="px-4 py-3">{agent.avgGrade.toFixed(2)}</td>
-                          <td className="px-4 py-3">{agent.totalTraces}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-xs font-bold text-emerald-400">
+                                {idx + 1}
+                              </div>
+                              <span className="font-medium text-slate-100">{agent.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-400">{agent.area ?? 'Sin área'}</td>
+                          <td className="px-6 py-4 text-slate-300">{agent.rewards}</td>
+                          <td className="px-6 py-4 text-slate-300">{agent.uses}</td>
+                          <td className="px-6 py-4 text-slate-300">{agent.downloads}</td>
+                          <td className="px-6 py-4">
+                            <Badge variant={agent.avgGrade >= 0.8 ? 'success' : agent.avgGrade >= 0.6 ? 'warning' : 'danger'}>
+                              {(agent.avgGrade * 100).toFixed(0)}%
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-slate-300">{agent.totalTraces}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </section>
-            </div>
-          )}
-        </div>
+              </Card>
+            </section>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-type DashboardStatCardProps = {
-  label: string
-  value: string
-}
-
-function DashboardStatCard({ label, value }: DashboardStatCardProps) {
+function Th({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
-      <p className="mt-4 text-3xl font-semibold text-white">{value}</p>
-    </div>
+    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+      {children}
+    </th>
   )
 }
 
-type DashboardAreaMetricProps = {
-  label: string
-  value: string
-}
-
-function DashboardAreaMetric({ label, value }: DashboardAreaMetricProps) {
+function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <dt className="text-white/60">{label}</dt>
-      <dd className="font-medium text-white">{value}</dd>
+      <span className="text-slate-400">{label}</span>
+      <span className="font-medium text-slate-200">{value}</span>
     </div>
   )
 }

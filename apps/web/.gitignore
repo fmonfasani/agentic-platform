@@ -1,0 +1,4 @@
+.env.local
+# Archivos de entorno
+.env.local
+.env.*

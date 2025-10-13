@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent } from 'react'
 import { AlertCircle, Check, FileText, Loader2, UploadCloud } from 'lucide-react'
-import { API_BASE_URL } from '../lib/config'
+import { API_BASE_URL } from '../../lib/config'
 
 type PdfUploadSummaryProps = {
   agentId: string | null

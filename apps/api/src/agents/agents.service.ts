@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { inferAgentType, AgentType } from './agent-type';
 import { PrismaService } from '../prisma/prisma.service';
+import OpenAI from 'openai'
 
 type AgentCreateArgs = Parameters<PrismaService['agent']['create']>[0];
 
@@ -40,7 +41,27 @@ type AgentSummaryWithType = AgentSummaryRow & { type: AgentType };
 
 @Injectable()
 export class AgentsService {
+  private client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   constructor(private readonly prisma: PrismaService) {}
+
+  async createAgent({ mode, code }: { mode: string; code: string }) {
+    if (mode === 'sdk') {
+      const assistant = await this.client.beta.assistants.create({
+        name: 'Agente SDK',
+        instructions: 'Sos un agente creado desde el SDK.',
+        model: 'gpt-4o',
+        tools: [{ type: 'code_interpreter' }],
+      });
+
+      return {
+        assistant_id: assistant.id,
+        name: assistant.name,
+      };
+    }
+
+    return { error: 'Modo no soportado' };
+  }
+
 
   async findAll() {
     return this.prisma.agent.findMany({
