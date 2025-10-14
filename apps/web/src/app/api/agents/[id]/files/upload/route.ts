@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getApiBaseUrl } from '@/lib/api/config'
-import { nextResponseFromFetch } from '@/lib/api/forwardToEnacom'
+
+
 
 const API_BASE_URL = getApiBaseUrl()
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       body: backendFormData
     })
 
-    return await nextResponseFromFetch(response)
+    return NextResponse.json(await response.json(), { status: response.status })
+
   } catch (error) {
     console.error('Error al subir archivo del agente:', error)
     return NextResponse.json(

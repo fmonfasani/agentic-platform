@@ -1,4 +1,4 @@
-import { forwardToEnacom } from '@/lib/api/forwardToEnacom'
+import { forwardToEnacom } from '@/lib/api'
 
 export const dynamic = 'force-dynamic'
 
