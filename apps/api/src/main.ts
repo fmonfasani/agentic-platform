@@ -1,19 +1,18 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
-import 'reflect-metadata';
-
+import { apiConfig } from './config/api.config'
+import 'reflect-metadata'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, { bufferLogs: true })
 
   app.setGlobalPrefix('api')
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: apiConfig.corsOrigins,
     credentials: true
   })
 
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001
-  await app.listen(port)
+  await app.listen(apiConfig.port)
 }
 
 bootstrap()

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { nextResponseFromFetch } from '../../../_utils'
+import { getApiBaseUrl } from '@/lib/api/config'
+import { nextResponseFromFetch } from '@/lib/api/forwardToEnacom'
 
-const DEFAULT_API_URL = 'http://localhost:3001/api'
+const API_BASE_URL = getApiBaseUrl()
 
-const API_BASE_URL =
-  resolveApiBaseUrl(process.env.API_URL, process.env.NEXT_PUBLIC_API_URL) ?? DEFAULT_API_URL
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -36,25 +36,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       { status: 500 }
     )
   }
-}
-
-function resolveApiBaseUrl(...values: Array<string | undefined>) {
-  for (const value of values) {
-    const normalized = normalizeEnvValue(value)
-    if (normalized) {
-      return normalized
-    }
-  }
-  return undefined
-}
-
-function normalizeEnvValue(value: string | undefined) {
-  if (!value) return undefined
-  const trimmed = value.trim()
-  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
-    return undefined
-  }
-  return trimmed.replace(/\/$/, '')
 }
 
 function createTargetUrl(path: string) {
