@@ -1,4 +1,6 @@
-import { forwardToEnacom } from '@/lib/api'
+import { forwardToEnacom } from '@/lib/api/forwardToEnacom'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   _request: Request,

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { forwardToEnacom } from '@/lib/api'
+
+import { getApiBaseUrl } from '@/lib/api/config'
+import { nextResponseFromFetch } from '@/lib/api/forwardToEnacom'
+
+const API_BASE_URL = getApiBaseUrl()
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -17,14 +23,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       backendFormData.append('vector_store_id', vectorStoreId)
     }
 
-    return forwardToEnacom(`/agents/${params.id}/files/upload`, {
+    const response = await fetch(createTargetUrl(`/agents/${params.id}/files/upload`), {
       method: 'POST',
       body: backendFormData
     })
+
+    return await nextResponseFromFetch(response)
   } catch (error) {
+    console.error('Error al subir archivo del agente:', error)
     return NextResponse.json(
       { message: 'No se pudo subir el archivo del agente' },
       { status: 500 }
     )
   }
+}
+
+function createTargetUrl(path: string) {
+  const baseUrl = API_BASE_URL.replace(/\/$/, '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${baseUrl}${normalizedPath}`
 }
