@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "next lint",
     "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml .turbo",
     "test:ui": "playwright test"
   },
@@ -23,6 +24,8 @@
     "swr": "^2.3.0"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.5",
     "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
