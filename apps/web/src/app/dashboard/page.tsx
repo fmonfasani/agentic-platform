@@ -3,12 +3,9 @@
 import { Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import AgentCapabilitiesModal from '../../components/agents/modal/AgentCapabilitiesModal'
-import {
-  AgentCapabilitiesAgent,
-  AgentToolsState
-} from '../../components/agents/modal/useAgentCapabilities'
-import { EmptyState } from '../../components/ui/EmptyState'
+import AgentCapabilitiesModal from '@/components/agents/modal/AgentCapabilitiesModal'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { AgentCapabilitiesAgent, AgentToolsState } from '@/components/agents/modal/useAgentCapabilities'
 import DashboardHeader from './components/DashboardHeader'
 import DashboardMetrics from './components/DashboardMetrics'
 import DashboardTable from './components/DashboardTable'
