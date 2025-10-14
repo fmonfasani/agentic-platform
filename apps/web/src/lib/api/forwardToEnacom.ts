@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
 
-const DEFAULT_API_URL = 'http://localhost:3001/api'
-
-const API_BASE_URL =
-  resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL, process.env.API_URL) ?? DEFAULT_API_URL
+import { getApiBaseUrl } from './config'
 
 type ForwardInit = RequestInit & { json?: unknown }
 
 export async function forwardToEnacom(path: string, init: ForwardInit = {}) {
   const headers = new Headers(init.headers)
-  if ((init.body || init.json) && !headers.has('Content-Type')) {
+  const shouldSendJson = init.json !== undefined || (init.body && !(init.body instanceof FormData))
+  if (shouldSendJson && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
@@ -53,27 +51,8 @@ function safeJsonParse(text: string) {
   }
 }
 
-function resolveApiBaseUrl(...values: Array<string | undefined>) {
-  for (const value of values) {
-    const normalized = normalizeEnvValue(value)
-    if (normalized) {
-      return normalized
-    }
-  }
-  return undefined
-}
-
-function normalizeEnvValue(value: string | undefined) {
-  if (!value) return undefined
-  const trimmed = value.trim()
-  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
-    return undefined
-  }
-  return trimmed.replace(/\/$/, '')
-}
-
 function createTargetUrl(path: string) {
-  const baseUrl = API_BASE_URL.replace(/\/$/, '')
+  const baseUrl = getApiBaseUrl()
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   return `${baseUrl}${normalizedPath}`
 }

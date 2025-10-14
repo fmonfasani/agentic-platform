@@ -1,19 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-export async function POST(req: Request) {
+import { forwardToEnacom } from '@/lib/api/forwardToEnacom'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: NextRequest) {
   const body = await req.json()
-
-  const response = await fetch(`${process.env.API_URL}/api/agents/create`, {
+  return forwardToEnacom('/agents/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    json: body
   })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    return NextResponse.json({ error: errorText }, { status: response.status })
-  }
-
-  const data = await response.json()
-  return NextResponse.json(data)
 }
