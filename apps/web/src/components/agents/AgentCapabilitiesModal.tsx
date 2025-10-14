@@ -161,9 +161,12 @@ export function AgentCapabilitiesModal({ agent, open, onClose, onToolsChange }: 
 
   useEffect(() => {
     setToolsState(agent?.tools ?? null)
+  }, [agent?.id, agent?.tools])
+
+  useEffect(() => {
     setNewDomain('')
     setMetadataFilter({ type: 'in', key: '', value: '' })
-  }, [agent])
+  }, [agent?.id])
 
   const tools = toolsState ?? agent?.tools ?? null
 
