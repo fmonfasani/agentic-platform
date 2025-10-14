@@ -834,7 +834,7 @@ function SearchTypeCard({ type: _type, label, description, icon: Icon, active, o
 
 type ConnectorCardProps = {
   connector: MCPConnector
-  icon?: JSX.Element
+  icon?: ReactNode
   onRemove: (id: string) => void
   onConfigure: (connector: MCPConnector) => void
 }
