@@ -12,9 +12,11 @@ export async function POST(req: Request) {
   let targetUrl: string
   try {
     const url = new URL(apiUrl)
-    url.pathname = url.pathname.endsWith('/')
-      ? `${url.pathname}agents/create`
-      : `${url.pathname}/agents/create`
+    const normalizedBasePath = url.pathname.replace(/\/+$/, '')
+    const joinedPath = [normalizedBasePath, 'agents', 'create']
+      .filter(Boolean)
+      .join('/')
+    url.pathname = joinedPath.startsWith('/') ? joinedPath : `/${joinedPath}`
     targetUrl = url.toString()
   } catch (error) {
     console.error('Invalid API_URL value:', apiUrl, error)
