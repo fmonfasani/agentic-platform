@@ -13,16 +13,13 @@ async function forwardToEnacom(path: string, options?: RequestInit) {
   }
 
   try {
-    const targetUrl = new URL(path, apiUrl).toString()
-    const response = await fetch(targetUrl, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options?.headers || {}),
-      },
-    })
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
+    const url = new URL(apiUrl)
+    const normalizedBasePath = url.pathname.replace(/\/+$/, '')
+    const joinedPath = [normalizedBasePath, 'agents', 'create']
+      .filter(Boolean)
+      .join('/')
+    url.pathname = joinedPath.startsWith('/') ? joinedPath : `/${joinedPath}`
+    targetUrl = url.toString()
   } catch (error) {
     console.error('Error forwarding request to Enacom:', error)
     return NextResponse.json(
