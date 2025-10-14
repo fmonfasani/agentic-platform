@@ -42,6 +42,73 @@ const HERRAMIENTAS_OPTIONS = [
   { id: 'AREA', label: 'ÁREA' },
 ] as const
 
+const PURPOSE_LABELS = PURPOSE_OPTIONS.reduce<Record<string, string>>((acc, option) => {
+  acc[option.id] = option.label
+  return acc
+}, {})
+
+const TOOL_LABELS = TOOL_OPTIONS.reduce<Record<string, string>>((acc, option) => {
+  acc[option.id] = option.label
+  return acc
+}, {})
+
+const HERRAMIENTA_LABELS = HERRAMIENTAS_OPTIONS.reduce<Record<string, string>>((acc, option) => {
+  acc[option.id] = option.label
+  return acc
+}, {})
+
+type VisualAgentConfig = {
+  name: string
+  model: string
+  purpose: string[]
+  tools: string[]
+  herramientas: string[]
+}
+
+const formatList = (values: string[], labels: Record<string, string>) =>
+  values.map((value) => labels[value] ?? value)
+
+const buildSdkAgentPayload = ({ name, model, purpose, tools, herramientas }: VisualAgentConfig) => {
+  const trimmedName = name.trim()
+  const readablePurposes = formatList(purpose, PURPOSE_LABELS)
+  const readableTools = formatList(tools, TOOL_LABELS)
+  const readableHerramientas = formatList(herramientas, HERRAMIENTA_LABELS)
+
+  const description = readablePurposes.length
+    ? `Agente creado con el constructor visual enfocado en ${readablePurposes.join(', ')}.`
+    : 'Agente creado con el constructor visual.'
+
+  const instructionLines = [
+    readablePurposes.length ? `Propósitos principales: ${readablePurposes.join(', ')}.` : null,
+    readableTools.length ? `Herramientas habilitadas: ${readableTools.join(', ')}.` : null,
+    readableHerramientas.length
+      ? `Áreas responsables: ${readableHerramientas.join(', ')}.`
+      : null,
+  ].filter((line): line is string => Boolean(line))
+
+  return {
+    mode: 'sdk' as const,
+    code: `export const agent = ${JSON.stringify(
+      {
+        name: trimmedName,
+        model,
+        purpose,
+        tools,
+        herramientas,
+      },
+      null,
+      2
+    )};`,
+    metadata: {
+      name: trimmedName,
+      model,
+      area: readableHerramientas[0] ?? 'Constructor Visual',
+      description,
+      instructions: instructionLines.length ? instructionLines.join('\n') : null,
+    },
+  }
+}
+
 type VisualAgentBuilderProps = {
   onCancel: () => void
   onSuccess: () => void
@@ -110,19 +177,18 @@ export function VisualAgentBuilder({ onCancel, onSuccess }: VisualAgentBuilderPr
 
     try {
       setSubmitting(true)
+      const payload = buildSdkAgentPayload({
+        name,
+        model,
+        purpose: selectedPurpose,
+        tools: selectedTools,
+        herramientas: selectedHerramientas,
+      })
+
       const res = await fetch('/api/agents/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'visual',
-          config: {
-            name: name.trim(),
-            model,
-            purpose: selectedPurpose,
-            tools: selectedTools,
-            herramientas: selectedHerramientas,
-          },
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
