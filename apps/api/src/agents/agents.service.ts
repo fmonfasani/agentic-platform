@@ -1,13 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { inferAgentType, AgentType } from './agent-type';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
-
-type AgentCreateArgs = Parameters<PrismaService['agent']['create']>[0];
-
-type AgentCreateData = AgentCreateArgs extends { data: infer T }
-  ? T
-  : AgentCreateArgs;
+import { apiConfig } from '../config/api.config';
 
 const AGENT_SUMMARY_SELECT = {
   id: true,
@@ -48,7 +43,7 @@ type SDKAgentMetadata = {
 }
 
 type CreateAgentPayload = {
-  mode: 'sdk'
+  mode: 'sdk' | 'visual'
   code: string
   metadata?: SDKAgentMetadata
 }
@@ -63,15 +58,16 @@ type AgentCreationResponse = {
 @Injectable()
 export class AgentsService {
   private client: OpenAI | null
+  private readonly logger = new Logger(AgentsService.name)
 
   constructor(private readonly prisma: PrismaService) {
-    this.client = process.env.OPENAI_API_KEY
-      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      : null;
+    this.client = apiConfig.openai.apiKey ? new OpenAI({ apiKey: apiConfig.openai.apiKey }) : null;
   }
 
   async createAgent({ mode, code, metadata }: CreateAgentPayload): Promise<AgentCreationResponse> {
-    if (mode !== 'sdk') {
+    const normalizedMode = mode === 'visual' ? 'sdk' : mode
+
+    if (normalizedMode !== 'sdk') {
       throw new BadRequestException('Modo no soportado');
     }
 
@@ -86,7 +82,7 @@ export class AgentsService {
     };
 
     if (!this.client) {
-      throw new BadRequestException(
+      throw new InternalServerErrorException(
         'OPENAI_API_KEY is not configured. Unable to create OpenAI assistant for the agent.',
       );
     }
@@ -104,7 +100,8 @@ export class AgentsService {
       assistantId = assistant.id;
       assistantName = assistant.name;
     } catch (error) {
-      console.error('Failed to create assistant via OpenAI:', error);
+      const details = error instanceof Error ? error.message : 'Unknown error'
+      this.logger.error(`Failed to create assistant via OpenAI: ${details}`, error instanceof Error ? error.stack : undefined)
       throw new BadRequestException('Failed to create assistant via OpenAI. Please try again later.');
     }
 
@@ -140,10 +137,6 @@ export class AgentsService {
       where: { id },
       include: { workflows: true, traces: true },
     });
-  }
-
-  async create(data: AgentCreateData) {
-    return this.prisma.agent.create({ data });
   }
 
   async listAgents(): Promise<AgentSummaryWithType[]> {

@@ -1,4 +1,4 @@
-import { forwardToEnacom } from '../../agents/_utils';
+import { forwardToEnacom } from '@/lib/api';
 
 export async function GET() {
   return forwardToEnacom('/dashboard/leaderboard');

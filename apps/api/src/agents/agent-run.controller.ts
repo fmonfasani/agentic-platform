@@ -9,12 +9,8 @@ import {
   Param,
   Post,
   Query,
-  UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { AgentRunnerService } from './agent-runner.service';
-import { AgentUploadService, AgentUploadFile } from './agent-upload.service';
 import { AgentTraceService } from './tracing/agent-trace.service';
 import { AgentEvalService } from './agent-eval.service';
 
@@ -22,7 +18,6 @@ import { AgentEvalService } from './agent-eval.service';
 export class AgentRunController {
   constructor(
     private readonly runnerService: AgentRunnerService,
-    private readonly uploadService: AgentUploadService,
     private readonly traceService: AgentTraceService,
     private readonly evalService: AgentEvalService,
   ) {}
@@ -40,12 +35,6 @@ export class AgentRunController {
     }
 
     return this.runnerService.run(id, payload);
-  }
-
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadAndRun(@Param('id') id: string, @UploadedFile() file: AgentUploadFile) {
-    return this.uploadService.handleUpload(id, file);
   }
 
   @Get('traces')
