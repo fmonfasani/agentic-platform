@@ -23,6 +23,6 @@ export function resolveCorsOrigins() {
   }
 
   return env.CORS_ORIGIN.split(',')
-    .map((origin) => origin.trim())
+    .map((origin: string) => origin.trim())
     .filter(Boolean)
 }
