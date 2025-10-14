@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { inferAgentType, AgentType } from './agent-type';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
@@ -85,27 +85,37 @@ export class AgentsService {
       model: metadata?.model ?? parsed.model ?? 'gpt-4o',
     };
 
-    if (!this.client) {
+    const client = this.client;
+
+    if (!client) {
       throw new BadRequestException(
         'OPENAI_API_KEY is not configured. Unable to create OpenAI assistant for the agent.',
       );
     }
 
-    let assistantId: string | null = null;
-    let assistantName: string | null = null;
+    let assistant: Awaited<ReturnType<typeof client.beta.assistants.create>> | null = null;
 
     try {
-      const assistant = await this.client.beta.assistants.create({
+      assistant = await client.beta.assistants.create({
         name: combined.name,
         instructions: combined.instructions ?? undefined,
         model: combined.model,
         tools: [{ type: 'code_interpreter' }],
       });
-      assistantId = assistant.id;
-      assistantName = assistant.name;
     } catch (error) {
       console.error('Failed to create assistant via OpenAI:', error);
-      throw new BadRequestException('Failed to create assistant via OpenAI. Please try again later.');
+      const message =
+        error instanceof Error && error.message
+          ? `Failed to create assistant via OpenAI: ${error.message}`
+          : 'Failed to create assistant via OpenAI. Please try again later.';
+
+      throw new BadGatewayException(message);
+    }
+
+    if (!assistant?.id) {
+      throw new BadGatewayException(
+        'Failed to create assistant via OpenAI. Missing assistant id in the response.',
+      );
     }
 
     const agent = await this.prisma.agent.create({
@@ -115,7 +125,7 @@ export class AgentsService {
         description: combined.description,
         instructions: combined.instructions,
         model: combined.model,
-        openaiAgentId: assistantId,
+        openaiAgentId: assistant.id,
       },
       include: { traces: true, workflows: true },
     });
@@ -123,8 +133,8 @@ export class AgentsService {
     return {
       message: 'Agente creado y almacenado correctamente',
       agent,
-      assistant_id: assistantId,
-      assistant_name: assistantName,
+      assistant_id: assistant.id,
+      assistant_name: assistant.name ?? null,
     };
   }
 
