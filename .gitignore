@@ -2,6 +2,7 @@ node_modules
 .next
 .DS_Store
 .env*
+!.env.example
 *.log
 apps/api/prisma/**/*.db
 # Build output
@@ -28,3 +29,4 @@ node_modules/
 
 
 .env
+apps/api/tsconfig.build.tsbuildinfo
