@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, ComponentType, useEffect, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, ComponentType, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Brain,
   Calendar,
@@ -408,7 +408,7 @@ export function AgentCapabilitiesModal({ agent, open, onClose, onToolsChange }: 
     return null
   }
 
-  const connectorIconMap: Record<string, JSX.Element> = {
+  const connectorIconMap: Record<string, ReactNode> = {
     connector_dropbox: <Cloud className="h-5 w-5 text-sky-300" />,
     connector_gmail: <Mail className="h-5 w-5 text-red-400" />,
     connector_googlecalendar: <Calendar className="h-5 w-5 text-blue-300" />,
