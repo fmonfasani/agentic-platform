@@ -27,6 +27,8 @@ model Agent {
   openaiAgentId String?
   model         String?  @default("gpt-4.1-mini")
   instructions  String?
+  mode          String   @default("llm")
+  rules         String?
   updatedAt     DateTime @updatedAt
 
   traces    AgentTrace[]
