@@ -29,3 +29,4 @@ node_modules/
 
 
 .env
+apps/api/tsconfig.build.tsbuildinfo
