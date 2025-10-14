@@ -87,18 +87,15 @@ export class AgentsService {
       );
     }
 
-    let assistantId: string | null = null;
-    let assistantName: string | null = null;
+    let assistant: Awaited<ReturnType<typeof client.beta.assistants.create>> | null = null;
 
     try {
-      const assistant = await this.client.beta.assistants.create({
+      assistant = await client.beta.assistants.create({
         name: combined.name,
         instructions: combined.instructions ?? undefined,
         model: combined.model,
         tools: [{ type: 'code_interpreter' }],
       });
-      assistantId = assistant.id;
-      assistantName = assistant.name;
     } catch (error) {
       const details = error instanceof Error ? error.message : 'Unknown error'
       this.logger.error(`Failed to create assistant via OpenAI: ${details}`, error instanceof Error ? error.stack : undefined)
@@ -112,7 +109,7 @@ export class AgentsService {
         description: combined.description,
         instructions: combined.instructions,
         model: combined.model,
-        openaiAgentId: assistantId,
+        openaiAgentId: assistant.id,
       },
       include: { traces: true, workflows: true },
     });
@@ -120,8 +117,8 @@ export class AgentsService {
     return {
       message: 'Agente creado y almacenado correctamente',
       agent,
-      assistant_id: assistantId,
-      assistant_name: assistantName,
+      assistant_id: assistant.id,
+      assistant_name: assistant.name ?? null,
     };
   }
 
