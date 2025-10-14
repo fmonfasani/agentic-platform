@@ -2,6 +2,8 @@
 
 Este monorepo contiene el backend (NestJS + Prisma) y el frontend (Next.js) necesarios para operar el panel de agentes del ENACOM integrado con **OpenAI AgentKit**.
 
+> ⚠️ **Importante:** Esta base de código evita dependencias experimentales como `@openai/chatkit` u `openai-agents`. Para ejecutar la plataforma es obligatorio definir las variables `API_URL` y `OPENAI_API_KEY` (ver `.env.example`). Sin esas claves, el backend responderá con errores controlados y la UI funcionará únicamente en modo simulado.
+
 La integración permite:
 
 - Registrar automáticamente cada agente del catálogo en Agent Builder.
@@ -26,8 +28,8 @@ La integración permite:
 
    | Variable | Descripción |
    | --- | --- |
-   | `NEXT_PUBLIC_ENACOM_API_URL` | URL del backend NestJS (p. ej. `http://localhost:3001`). |
-   | `NEXT_PUBLIC_CHATKIT_CDN` | (Opcional) CDN de ChatKit embebido. |
+   | `NEXT_PUBLIC_API_URL` | URL del backend NestJS (p. ej. `http://localhost:3001/api`). |
+   | `API_URL` | URL interna usada por las rutas de API de Next.js (se sugiere el mismo valor que `NEXT_PUBLIC_API_URL`). |
 
 3. **Instalar dependencias y preparar la base de datos**
 

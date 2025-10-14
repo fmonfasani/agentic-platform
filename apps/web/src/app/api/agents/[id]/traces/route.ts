@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { forwardToEnacom } from '../../_utils'
+import { forwardToEnacom } from '@/lib/api'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const take = req.nextUrl.searchParams.get('take')
