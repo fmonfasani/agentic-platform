@@ -1,0 +1,36 @@
+name: 🩺 IOPeer Diagnostic
+
+on:
+  push:
+    branches: [ main, dev, codex/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Instalar dependencias
+        run: |
+          pip install -r requirements.txt || true
+          pip install python-dotenv supabase openai
+
+      - name: ⚙️ Ejecutar diagnóstico iopeer
+        run: python diagnose_iopeer.py
+
+      - name: 📤 Subir reporte como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iopeer-diagnostic-report
+          path: |
+            diagnostic_report.json
+            diagnostic_report.md

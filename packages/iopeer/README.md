@@ -111,13 +111,13 @@ if __name__ == "__main__":
 
 ---
 
-## 🔄 Migración desde `agentic_autopilot`
+## 🔄 Migración desde `iopeer`
 
 ### 📁 Estructura actual
 
 ```
 scripts/
-└── agentic_autopilot/
+└── iopeer/
     ├── agents/
     ├── core/
     ├── loops/
@@ -140,12 +140,12 @@ packages/iopeer/
 #### 1️⃣ Mover las carpetas base
 
 ```bash
-mv scripts/agentic_autopilot/agents packages/iopeer/tool/
-mv scripts/agentic_autopilot/core/memory packages/iopeer/data/
-mv scripts/agentic_autopilot/core/eval_layer.py packages/iopeer/metrics/
-mv scripts/agentic_autopilot/core/reflection_layer.py packages/iopeer/reflection/
-mv scripts/agentic_autopilot/loops packages/iopeer/learning/
-mv scripts/agentic_autopilot/core/utils_core.py packages/iopeer/utils/
+mv scripts/iopeer/agents packages/iopeer/tool/
+mv scripts/iopeer/core/memory packages/iopeer/data/
+mv scripts/iopeer/core/eval_layer.py packages/iopeer/metrics/
+mv scripts/iopeer/core/reflection_layer.py packages/iopeer/reflection/
+mv scripts/iopeer/loops packages/iopeer/learning/
+mv scripts/iopeer/core/utils_core.py packages/iopeer/utils/
 ```
 
 #### 2️⃣ Crear carpetas nuevas y `__init__.py`
@@ -158,12 +158,12 @@ touch packages/iopeer/{planning,metrics,reflection,learning,utils}/__init__.py
 #### 3️⃣ Actualizar imports (VS Code → *Find & Replace*)
 
 * Buscar:
-  `from agentic_autopilot.core.memory`
+  `from iopeer.core.memory`
   Reemplazar por:
   `from iopeer.data.memory`
 
 * Buscar:
-  `from agentic_autopilot.agents`
+  `from iopeer.agents`
   Reemplazar por:
   `from iopeer.tool.agents`
 
@@ -172,7 +172,7 @@ touch packages/iopeer/{planning,metrics,reflection,learning,utils}/__init__.py
 Reemplazá todas las rutas:
 
 ```
-scripts/agentic_autopilot/agents/git_agent/
+scripts/iopeer/agents/git_agent/
 ```
 
 por

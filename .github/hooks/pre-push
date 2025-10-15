@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# 🩺 Pre-push hook: ejecuta diagnóstico iopeer antes de subir cambios
+set -e
+
+echo "🔍 Ejecutando diagnóstico iopeer antes del push..."
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
+
+# Usa Python del sistema (compatible con Windows Git Bash)
+python diagnose_iopeer.py
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "❌ Diagnóstico fallido. Corrige los errores antes de hacer push."
+  exit 1
+else
+  echo "✅ Diagnóstico OK. Continuando con el push..."
+fi

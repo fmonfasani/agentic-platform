@@ -97,24 +97,15 @@ replacements = {
     'agentic_autopilot.core.eval_layer': 'iopeer.metrics.eval_layer',
     'agentic_autopilot.core.reflection_layer': 'iopeer.reflection.analyzer',
 }
+
 for path in root.rglob('*.py'):
-    text = path.read_text()
-    updated = text
-    for old, new in replacements.items():
-        updated = updated.replace(old, new)
-    if updated != text:
-        path.write_text(updated)
+    try:
+        text = path.read_text(encoding='utf-8', errors='ignore')
+        updated = text
+        for old, new in replacements.items():
+            updated = updated.replace(old, new)
+        if updated != text:
+            path.write_text(updated, encoding='utf-8')
+    except Exception as e:
+        print(f"⚠️ Error procesando {path}: {e}")
 PY
-
-log "🛠️ Actualizando Makefile"
-if [[ -f scripts/Makefile ]]; then
-  sed -i "s#scripts/agentic_autopilot/agents#packages/iopeer/tool/agents#g" scripts/Makefile
-  sed -i "s#scripts/agentic_autopilot#packages/iopeer#g" scripts/Makefile
-fi
-
-log "🧾 Resumen"
-log "   - Estructura creada en $DEST_DIR"
-log "   - Imports actualizados"
-log "   - Makefile ajustado"
-log "✅ Migración completada"
-
