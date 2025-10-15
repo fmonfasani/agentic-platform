@@ -66,6 +66,12 @@ const agentsData = [
     area: 'Dirección General',
     description:
       'Automatiza la redacción de informes ejecutivos con datos actualizados y visualizaciones.',
+    mode: 'deterministic',
+    rules: JSON.stringify([
+      { trigger: 'informe', response: '📄 Generando informe estructurado...' },
+      { trigger: 'reporte', response: '📊 Preparando reporte detallado...' },
+      { trigger: 'analisis', response: '🧠 Analizando datos...' },
+    ]),
     workflows: [
       {
         id: 'wf-generador-informes-1',
@@ -125,6 +131,8 @@ async function main() {
         name: agent.name,
         area: agent.area,
         description: agent.description,
+        mode: agent.mode ?? 'llm',
+        rules: agent.rules ?? null,
         uses,
         downloads,
         rewards,

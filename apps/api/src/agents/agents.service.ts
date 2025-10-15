@@ -22,6 +22,8 @@ const AGENT_SUMMARY_SELECT = {
   openaiAgentId: true,
   model: true,
   instructions: true,
+  mode: true,
+  rules: true,
 } as const;
 
 type AgentSummaryRow = {
@@ -36,6 +38,8 @@ type AgentSummaryRow = {
   openaiAgentId: string | null;
   model: string | null;
   instructions: string | null;
+  mode: string;
+  rules: string | null;
 };
 
 type AgentSummaryWithType = AgentSummaryRow & { type: AgentType };
@@ -46,6 +50,8 @@ type SDKAgentMetadata = {
   description?: string | null;
   instructions?: string | null;
   model?: string;
+  mode?: AgentMode;
+  rules?: DeterministicRule[] | null;
 };
 
 type CreateAgentPayload = {
@@ -59,6 +65,13 @@ type AgentCreationResponse = {
   agent: Awaited<ReturnType<PrismaService['agent']['create']>>;
   assistant_id: string | null;
   assistant_name: string | null;
+};
+
+type AgentMode = 'llm' | 'deterministic';
+
+type DeterministicRule = {
+  trigger: string;
+  response: string;
 };
 
 @Injectable()
@@ -94,6 +107,8 @@ export class AgentsService {
         'Agente creado desde el SDK',
       instructions: metadata?.instructions ?? parsed.instructions ?? null,
       model: metadata?.model ?? parsed.model ?? 'gpt-4o',
+      mode: metadata?.mode ?? parsed.mode ?? 'llm',
+      rules: metadata?.rules ?? parsed.rules ?? null,
     };
 
     if (!this.client) {
@@ -132,6 +147,8 @@ export class AgentsService {
         description: combined.description,
         instructions: combined.instructions,
         model: combined.model,
+        mode: combined.mode,
+        rules: combined.rules ? JSON.stringify(combined.rules) : null,
         openaiAgentId: assistant.id,
       },
       include: { traces: true, workflows: true },
@@ -156,6 +173,79 @@ export class AgentsService {
       where: { id },
       include: { workflows: true, traces: true },
     });
+  }
+
+  async runAgent(
+    id: string,
+    body: { prompt?: string } | undefined,
+  ): Promise<{ output: string }> {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        instructions: true,
+        model: true,
+        mode: true,
+        rules: true,
+      },
+    });
+
+    if (!agent) {
+      throw new NotFoundException('Agent not found');
+    }
+
+    if (agent.mode === 'deterministic') {
+      const input = body?.prompt ?? '';
+      const rulesFromDb = this.normalizeDeterministicRules(agent.rules);
+      const defaultRules: DeterministicRule[] = [
+        { trigger: 'informe', response: '📄 Generando informe estructurado...' },
+        { trigger: 'reporte', response: '📊 Preparando reporte detallado...' },
+        { trigger: 'analisis', response: '🧠 Analizando datos...' },
+      ];
+
+      const rules = rulesFromDb.length > 0 ? rulesFromDb : defaultRules;
+      const normalizedInput = input.toLowerCase();
+      const matchedRule = rules.find((rule) =>
+        normalizedInput.includes(rule.trigger.toLowerCase()),
+      );
+
+      return {
+        output: matchedRule
+          ? matchedRule.response
+          : '⚙️ No se encontró ninguna coincidencia en las reglas.',
+      };
+    }
+
+    if (!this.client) {
+      throw new InternalServerErrorException(
+        'OPENAI_API_KEY is not configurada. No se puede ejecutar el agente.',
+      );
+    }
+
+    const prompt = body?.prompt ?? '';
+
+    try {
+      const response = await this.client.responses.create({
+        model: agent.model ?? 'gpt-4o-mini',
+        input: prompt,
+        instructions: agent.instructions ?? undefined,
+      });
+
+      const output = this.extractOutputText(response);
+
+      return {
+        output,
+      };
+    } catch (error) {
+      const details = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to execute agent via OpenAI: ${details}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new BadRequestException(
+        'Failed to execute agent via OpenAI. Please try again later.',
+      );
+    }
   }
 
   async listAgents(): Promise<AgentSummaryWithType[]> {
@@ -205,6 +295,77 @@ export class AgentsService {
 
     return agent;
   }
+
+  private normalizeDeterministicRules(rules: string | null): DeterministicRule[] {
+    if (!rules) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(rules) as unknown;
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed.filter((rule): rule is DeterministicRule => {
+        if (!rule || typeof rule !== 'object') {
+          return false;
+        }
+
+        const candidate = rule as DeterministicRule;
+        return (
+          typeof candidate.trigger === 'string' &&
+          typeof candidate.response === 'string'
+        );
+      });
+    } catch (error) {
+      this.logger.warn(
+        'Failed to parse deterministic rules from database payload.',
+        error instanceof Error ? error.message : undefined,
+      );
+      return [];
+    }
+  }
+
+  private extractOutputText(response: any): string {
+    if (typeof response?.output_text === 'string') {
+      return response.output_text;
+    }
+
+    if (Array.isArray(response?.output)) {
+      const text = response.output
+        .flatMap((item: any) => {
+          if (item?.type === 'output_text' && Array.isArray(item?.text)) {
+            return item.text
+              .filter((entry: any) => typeof entry?.value === 'string')
+              .map((entry: any) => entry.value as string);
+          }
+
+          if (item?.type === 'message' && Array.isArray(item?.content)) {
+            return item.content
+              .filter((entry: any) => entry?.type === 'output_text')
+              .flatMap((entry: any) =>
+                Array.isArray(entry?.text)
+                  ? entry.text
+                      .filter((textEntry: any) =>
+                        typeof textEntry?.value === 'string',
+                      )
+                      .map((textEntry: any) => textEntry.value as string)
+                  : [],
+              );
+          }
+
+          return [];
+        })
+        .join('');
+
+      if (text) {
+        return text;
+      }
+    }
+
+    return '';
+  }
 }
 
 type ParsedAgentSource = {
@@ -213,6 +374,8 @@ type ParsedAgentSource = {
   description?: string | null;
   instructions?: string | null;
   model?: string;
+  mode?: AgentMode;
+  rules?: DeterministicRule[] | null;
 };
 
 function parseAgentSource(code: string | undefined): ParsedAgentSource {
@@ -239,6 +402,39 @@ function parseAgentSource(code: string | undefined): ParsedAgentSource {
   const model = sanitize(
     getMatch(/model\s*:\s*["'`]([\s\S]*?)["'`]/i),
   );
+  const rawMode = sanitize(
+    getMatch(/mode\s*:\s*["'`]([\s\S]*?)["'`]/i),
+  );
+  const normalizedMode = rawMode
+    ? (rawMode.toLowerCase() as AgentMode)
+    : undefined;
+  const mode =
+    normalizedMode && ['llm', 'deterministic'].includes(normalizedMode)
+      ? normalizedMode
+      : undefined;
+  const rulesMatch = getMatch(/rules\s*:\s*(\[[\s\S]*?\])/i);
+  let rules: DeterministicRule[] | null = null;
+
+  if (rulesMatch) {
+    try {
+      const parsedRules = JSON.parse(rulesMatch) as unknown;
+      if (Array.isArray(parsedRules)) {
+        const validRules = parsedRules.filter(
+          (rule): rule is DeterministicRule =>
+            !!rule &&
+            typeof rule === 'object' &&
+            typeof (rule as DeterministicRule).trigger === 'string' &&
+            typeof (rule as DeterministicRule).response === 'string',
+        );
+
+        if (validRules.length > 0) {
+          rules = validRules;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to parse deterministic rules from agent source:', error);
+    }
+  }
   const area =
     sanitize(
       getMatch(/area\s*:\s*["'`]([\s\S]*?)["'`]/i),
@@ -251,5 +447,5 @@ function parseAgentSource(code: string | undefined): ParsedAgentSource {
     instructions ??
     null;
 
-  return { name, area, description, instructions, model };
+  return { name, area, description, instructions, model, mode, rules };
 }

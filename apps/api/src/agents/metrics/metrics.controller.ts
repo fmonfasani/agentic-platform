@@ -1,9 +1,13 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common'
 import { MetricsService } from './metrics.service'
+import { AgentsService } from '../agents.service'
 
 @Controller('agents/:id')
 export class MetricsController {
-  constructor(private readonly metricsService: MetricsService) {}
+  constructor(
+    private readonly metricsService: MetricsService,
+    private readonly agentsService: AgentsService,
+  ) {}
 
   @Get('metrics')
   getMetrics(@Param('id') id: string) {
@@ -11,7 +15,19 @@ export class MetricsController {
   }
 
   @Post('use')
-  incrementUses(@Param('id') id: string) {
+  async incrementUses(
+    @Param('id') id: string,
+    @Body() body: { prompt?: string } | undefined,
+  ) {
+    if (body?.prompt !== undefined) {
+      const [response] = await Promise.all([
+        this.agentsService.runAgent(id, body),
+        this.metricsService.increment(id, 'uses'),
+      ])
+
+      return response
+    }
+
     return this.metricsService.increment(id, 'uses')
   }
 

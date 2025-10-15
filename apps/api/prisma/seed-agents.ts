@@ -7,6 +7,8 @@ type SeedAgent = {
   area: string;
   description: string;
   instructions: string;
+  mode?: 'llm' | 'deterministic';
+  rules?: { trigger: string; response: string }[] | string | null;
 };
 
 const prisma = new PrismaClient();
@@ -42,6 +44,12 @@ const seedAgents: SeedAgent[] = [
     area: 'Dirección Nacional de Servicios TIC',
     description: 'Produce informes automatizados de resultados institucionales.',
     instructions: 'Genera reportes y visualizaciones de alto nivel basados en datos internos.',
+    mode: 'deterministic',
+    rules: [
+      { trigger: 'informe', response: '📄 Generando informe estructurado...' },
+      { trigger: 'reporte', response: '📊 Preparando reporte detallado...' },
+      { trigger: 'analisis', response: '🧠 Analizando datos...' },
+    ],
   },
 ];
 
@@ -80,6 +88,12 @@ async function seed() {
           description: agent.description,
           openaiAgentId,
           instructions: agent.instructions,
+          mode: agent.mode ?? 'llm',
+          rules: agent.rules
+            ? typeof agent.rules === 'string'
+              ? agent.rules
+              : JSON.stringify(agent.rules)
+            : null,
           uses: Math.floor(Math.random() * 250),
           downloads: Math.floor(Math.random() * 150),
           rewards: Math.floor(Math.random() * 12),

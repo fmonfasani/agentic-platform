@@ -14,6 +14,7 @@ async function main() {
         description:
           'Especialista en diagnósticos de infraestructura y optimización de despliegues tecnológicos.',
         area: 'Infraestructura y Operaciones',
+        mode: 'llm',
         uses: randomInt(150, 600),
         downloads: randomInt(50, 200),
         rewards: randomInt(5, 25),
@@ -25,6 +26,7 @@ async function main() {
         description:
           'Integra balances, presupuestos y proyecciones para apoyar la toma de decisiones financieras.',
         area: 'Gestión Financiera y Contable',
+        mode: 'llm',
         uses: randomInt(120, 500),
         downloads: randomInt(40, 180),
         rewards: randomInt(5, 20),
@@ -36,6 +38,7 @@ async function main() {
         type: 'regulatory',
         description: 'Monitorea el cumplimiento normativo y los procesos de licenciamiento TIC.',
         area: 'Gestión Regulatoria y Licencias',
+        mode: 'llm',
         uses: 58,
         downloads: 24,
         rewards: 6,
@@ -47,6 +50,12 @@ async function main() {
         type: 'reporting',
         description: 'Genera tableros ejecutivos y reportes institucionales automatizados.',
         area: 'Reportes e Informes Institucionales',
+        mode: 'deterministic',
+        rules: JSON.stringify([
+          { trigger: 'informe', response: '📄 Generando informe estructurado...' },
+          { trigger: 'reporte', response: '📊 Preparando reporte detallado...' },
+          { trigger: 'analisis', response: '🧠 Analizando datos...' }
+        ]),
         uses: 87,
         downloads: 33,
         rewards: 11,
