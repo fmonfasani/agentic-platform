@@ -36,7 +36,7 @@ const assistant = await client.beta.assistants.create({
       setLoading(true)
       setErrorMessage(null)
       setResult(null)
-      const res = await fetch('/api/agents', {
+      const res = await fetch('/api/agents/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'sdk', code }),
