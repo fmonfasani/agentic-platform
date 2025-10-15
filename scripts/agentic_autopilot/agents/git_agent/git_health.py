@@ -1,19 +1,21 @@
-from .utils_git import run_cmd
+from agentic_autopilot.agents.git_agent.utils_git import run_cmd
 
-def check_git_health():
-    print("Ì¥ç Analizando estado del repositorio...")
-    status = run_cmd("git status --short")
+def check_git_health(memory=None):
+    """Analiza el estado del repositorio y guarda el resultado en memoria."""
+    print("[INFO] Analizando estado del repositorio...")
+
     branch = run_cmd("git rev-parse --abbrev-ref HEAD")
-    ahead = run_cmd("git rev-list --left-right --count origin/{0}...{0}".format(branch))
+    status = run_cmd("git status --short")
+    sync = run_cmd(f"git rev-list --left-right --count origin/{branch['output'].strip()}...{branch['output'].strip()}")
 
-    print(f"Ì∫¥ Rama actual: {branch}")
-    if not status:
-        print("‚úÖ Working directory limpio.")
-    else:
-        print("‚ö†Ô∏è Cambios sin commitear:\\n", status)
+    result = {
+        "branch": branch,
+        "status": status,
+        "sync": sync,
+    }
 
-    print("Ì≥° Sincronizaci√≥n remota:", ahead)
-    return {"branch": branch, "status": status, "sync": ahead}
+    if memory:
+        memory.save_log("git", "check_health", "success" if sync["ok"] else "error", str(result))
+        memory.save_metric("git", "health_checked", 1)
 
-if __name__ == "__main__":
-    check_git_health()
+    return result
