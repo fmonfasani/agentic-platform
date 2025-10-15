@@ -1,16 +1,22 @@
 from datetime import datetime
 from .git_health import check_git_health
 
-def generate_report():
-    info = check_git_health()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    path = f"scripts/reports/status/git-health-{timestamp}.md"
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(f"# í·¾ Git Health Report ({timestamp})\\n\\n")
-        f.write(f"**Branch:** {info['branch']}\\n\\n")
-        f.write("## Status\\n```\\n" + (info["status"] or "Clean") + "\\n```\\n")
-        f.write("## Sync\\n" + info["sync"])
-    print(f"í³„ Reporte generado en {path}")
+def generate_report(memory=None):
+    """Genera un reporte del estado de Git y lo guarda en la memoria local."""
+    info = check_git_health(memory)
 
-if __name__ == "__main__":
-    generate_report()
+    report = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "agent": "git",
+        "branch": info["branch"]["output"].strip(),
+        "status": info["status"]["output"][:3000],
+        "sync": info["sync"]["output"],
+        "ok": info["sync"]["ok"]
+    }
+
+    if memory:
+        memory.save_log("git", "generate_report", "success", str(report))
+        memory.save_metric("git", "report_generated", 1)
+
+    print("[INFO] Reporte de Git guardado en TinyMemory.")
+    return report

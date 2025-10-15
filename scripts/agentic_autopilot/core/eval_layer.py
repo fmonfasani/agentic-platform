@@ -23,27 +23,7 @@ class EvalLayer:
         }
 
     @staticmethod
-    def evaluate_run(agent_name: str, command: str, output: str):
-        """Evalúa heurísticamente una ejecución individual."""
-        score = 1.0
-        tags = []
-
-        if "error" in output.lower():
-            score -= 0.5
-            tags.append("error")
-
-        if "conflict" in output.lower():
-            score -= 0.3
-            tags.append("conflict")
-
-        if "success" in output.lower():
-            score += 0.2
-            tags.append("success")
-
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "agent": agent_name,
-            "command": command,
-            "score": max(0, min(score, 1)),
-            "tags": tags,
-        }
+    def evaluate_run(agent, command, output):
+        """Evalúa la ejecución y devuelve un puntaje simple."""
+        score = 1.0 if "error" not in output.lower() else 0.0
+        return {"agent": agent, "command": command, "score": score}
