@@ -21,8 +21,8 @@ else
 endif
 
 # Log info
-$(info 🧠 Entorno detectado: $(ENVIRONMENT))
-$(info 🐍 Usando intérprete: $(PYTHON))
+$(Entorno detectado: $(ENVIRONMENT))
+$(Usando intérprete: $(PYTHON))
 
 
 # Variables
@@ -83,13 +83,23 @@ test-backend:
 # 🧠 GIT AUTOPILOT MODULE
 # ===============================
 GIT_AGENT_DIR := ./agentic_autopilot/agents/git_agent
+
 ## 🔍 Diagnóstico del estado del repositorio
 git-auto:
-
-	@echo " Ejecutando  diagnositico de git y viendo soluciones"
+	@echo "Ejecutando  diagnositico de git y viendo soluciones"
 	@$(PYTHON) $(GIT_AGENT_DIR)/git_autopilot.py
 
-git-di:
+
+git-diagnostic:
+	@echo "Ejecutando diagnostico basico de Git..."
+	@$(PYTHON) $(GIT_AGENT_DIR)/git_diagnostic.py
+	
+
+git-diagnostic_extended:
+	@echo "🔍 Ejecutando diagnóstico de Git..."
+	@$(PYTHON) $(GIT_AGENT_DIR)/git_diagnostic_extended.py
+
+git-health:
 	@echo "🔍 Ejecutando diagnóstico de Git..."
 	@python3 $(GIT_AGENT_DIR)/git_health.py
 
@@ -109,3 +119,5 @@ ai-commit:
 	@DIFF="$$(git diff --cached)" && \
 	python3 -c "from agentic_autopilot.git_agent.git_commit_ai import ai_commit_message; \
 	print(ai_commit_message('''$$DIFF'''))"
+
+

@@ -1,32 +1,77 @@
-node_modules
-.next
+# ===========================
+# Sistema operativo / IDE
+# ===========================
 .DS_Store
-.env*
-!.env.example
-*.log
-apps/api/prisma/**/*.db
-# Build output
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.class
+
+# ===========================
+# Entornos virtuales / build
+# ===========================
+.venv/
+env/
+venv/
 dist/
-apps/api/dist/
-
-# Archivos temporales o locales
-*.log
-.env
+build/
+*.egg-info/
 node_modules/
+coverage/
+.cache/
+__pycache__/
 
-# Build output
+# ===========================
+# Archivos temporales
+# ===========================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ===========================
+# Configuraciones locales
+# ===========================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ===========================
+# Archivos de base de datos y memoria
+# ===========================
+*.db
+*.sqlite
+*.sqlite3
+*.json
+*.pkl
+
+# ===========================
+# Archivos generados por scripts
+# ===========================
+reports/
+logs/
+scripts/scripts/
+agentic_autopilot/core/memory/tiny_memory.json
+agentic_autopilot/core/memory/git_diagnostics.db
+
+# ===========================
+# Archivos de compilación JS
+# ===========================
+.next/
+out/
 dist/
-apps/api/dist/
+*.map
 
-# Playwright artifacts
-playwright-report/
-test-results/
-
-# Archivos temporales o locales
-*.log
-.env
-node_modules/
-
-
-.env
-apps/api/tsconfig.build.tsbuildinfo
+# ===========================
+# Configuración de dependencias locales
+# ===========================
+pnpm-lock.yaml
+yarn.lock
+package-lock.json

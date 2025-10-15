@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { forwardToEnacom } from '@/lib/api'
+import { forwardToEnacom } from '../../../../lib/api/forwardToEnacom'
 
 export async function POST(req: Request) {
   try {
