@@ -7,8 +7,8 @@ global.fetch = jest.fn(() =>
       Promise.resolve([
         { area: 'Técnico', avgGrade: 0.87, totalAgents: 4, avgRewards: 12, totalUses: 10, totalDownloads: 5, totalTraces: 3 },
       ]),
-  })
-) as any
+  } as Response)
+)
 
 describe('AreasDashboardPage', () => {
   it('renders table headers and data', async () => {

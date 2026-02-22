@@ -480,12 +480,19 @@ export function AgentDetailsModal({ agent, open, onClose }: AgentDetailsModalPro
   )
 }
 
+type TraceOutput =
+  | string
+  | { summary?: string; message?: string }
+  | Array<string | { content?: string } | null>
+  | null
+  | undefined
+
 function extractTraceSummary(trace: AgentTrace) {
   if (trace.summary) {
     return trace.summary
   }
 
-  const output = trace.output as any
+  const output = trace.output as TraceOutput
 
   if (!output) {
     return null

@@ -4,10 +4,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "prepare": "husky",
     "dev": "pnpm -C apps/web dev",
     "build": "pnpm -C apps/web build",
     "start": "pnpm -C apps/web build && pnpm -C apps/web start",
-    "lint": "echo 'add your linter'",
+    "lint": "pnpm -C apps/web lint",
+    "lint:staged": "lint-staged",
     "format": "prettier -w .",
     "test": "jest",
     "diagnostics": "tsx scripts/agent-diagnostics.ts"
@@ -28,7 +30,17 @@
     "ts-jest": "^29.4.5",
     "tsx": "^4.20.6",
     "turbo": "^2.5.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --dir apps/web exec eslint --cache --max-warnings=0 --fix --"
+    ],
+    "apps/web/**/*.{json,md,css}": [
+      "prettier -w"
+    ]
   },
   "workspaces": [
     "apps/*",

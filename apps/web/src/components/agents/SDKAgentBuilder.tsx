@@ -10,6 +10,16 @@ type SDKAgentBuilderProps = {
   onSuccess: () => void
 }
 
+type CreateAgentResponse = {
+  message?: string
+  assistant_id?: string
+  agent?: {
+    id?: string
+    name?: string
+    area?: string
+  }
+}
+
 export function SDKAgentBuilder({ onCancel, onSuccess }: SDKAgentBuilderProps) {
   const [code, setCode] = useState(`import OpenAI from "openai";
 
@@ -22,7 +32,7 @@ const assistant = await client.beta.assistants.create({
   tools: [{ type: "code_interpreter" }],
 });`)
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<CreateAgentResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
 
